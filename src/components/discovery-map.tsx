@@ -6,8 +6,8 @@
 import "leaflet/dist/leaflet.css";
 
 // TODO : This import gives "window is not defined" error in the terminal. Fix it.
+// POST FIX : use next/dynamic in a client side component that takes the incoming data from server as prop and passes it to child -> discovery-map.tsx component. This ensures, the discover-map.tsx component renders on client side in the browser and the window object by that time is accessible to the dependency.
 import "leaflet-defaulticon-compatibility";
-
 
 // TODO : Clicking a marker should ideally open the popup with the selected property details. Currently not implemented. Implement it.
 
