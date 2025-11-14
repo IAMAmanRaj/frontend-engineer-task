@@ -37,16 +37,10 @@ import { HouseIcon } from "@/assets/house-icon";
 import { LocationIcon } from "@/assets/location-icon";
 import { CalendarIcon } from "@/assets/utility";
 import L, { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
-import { LocationType, projectListing } from "@/types/types";
+import { Location, projectListing } from "@/types/types";
 import { Badge } from "./badge";
 import { renderToString } from "react-dom/server";
-import dynamic from "next/dynamic";
 
-interface Location {
-  lat: number;
-  lon: number;
-  name: string;
-}
 
 export const renderIcon = (
   icon: JSX.Element,
@@ -102,7 +96,7 @@ function MapController({
 export default function DiscoveryMap({
   allFilteredData,
 }: Readonly<{ allFilteredData: any }>) {
-  const [selectedLocation, setSelectedLocation] = useState<LocationType | null>(
+  const [selectedLocation, setSelectedLocation] = useState<Location | null>(
     null
   );
   const sectionRef = useRef(null);
@@ -167,6 +161,16 @@ export default function DiscoveryMap({
           {allFilteredData && allFilteredData.projects.length > 0
             ? allFilteredData.projects.map((project: projectListing) => (
                 <Marker
+                  eventHandlers={{
+                    click: () => {
+                      setSelectedProperty(project);
+                      setSelectedLocation({
+                        name: project.name,
+                        lat: project.latitude,
+                        lon: project.longitude,
+                      });
+                    },
+                  }}
                   position={[project.latitude, project.longitude]}
                   key={project.id}
                   icon={getOtherLocationIcon(

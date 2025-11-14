@@ -22,13 +22,10 @@ export interface projectListing {
   longitude: number
 }
 
-export interface LocationType {
-  name: string
-  lat: number
-  lon: number
-  distance: number
-  duration: number
-  googlePlaceId?: string
+export interface Location {
+  lat: number;
+  lon: number;
+  name: string;
 }
 
 export type IconSvgProps = SVGProps<SVGSVGElement> & {
