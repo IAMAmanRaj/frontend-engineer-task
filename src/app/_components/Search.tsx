@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import { useDebouncedCallback } from "use-debounce";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -12,7 +13,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
 
   const [suggestions, setSuggestions] = useState<any>([]);
 
-  async function handleSearch(term: string) {
+  const handleSearch = useDebouncedCallback(async (term) => {
     if (!term.trim()) {
       setSuggestions([]);
       return;
@@ -24,7 +25,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
     const data = await response.json();
 
     setSuggestions(data.suggestions || []);
-  }
+  }, 300);
 
   function applySuggestion(suggestion: any) {
     const params = new URLSearchParams(searchParams);
