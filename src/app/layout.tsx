@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Image from "next/image";
+import { LogoIcon } from "@/assets/logo-icon";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,6 +29,13 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <nav className="w-full flex justify-center pl-4 items-center absolute z-20 top-0 h-20 bg-white/30 backdrop-blur-[5px]">
+          <div className="flex text-3xl font-bold flex-row items-center">
+            <LogoIcon width={42} height={42} />
+            <span className="text-[#FF6D33] ml-1">Prop</span>
+            <span className="text-black ml-px">soch</span>
+          </div>
+        </nav>
         {children}
       </body>
     </html>

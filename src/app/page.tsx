@@ -1,6 +1,8 @@
 import { PropertyListing } from "@/data/property-listing";
 import MapCaller from "@/components/MapCaller";
 
+const apiUrl = process.env.API_URL;
+
 //TODO : Add meta data for this page
 // Page should serve via SSR
 // Do not add "use client" declarative
@@ -12,8 +14,15 @@ import MapCaller from "@/components/MapCaller";
 // You can modify the Property Listing however you want. If you feel like creating an API and implementing pagination via that, totally your call.
 
 export default async function Page() {
+  const data = await fetch(`${apiUrl}/api/property-listing`, {
+    cache: "no-store", 
+  });
+  const properties = await data.json();
+
+  console.log(properties);
+
   return (
-    <div className="w-screen h-screen">
+    <div className="w-screen h-screen bg-black">
       <MapCaller allFilteredData={PropertyListing} />
     </div>
   );

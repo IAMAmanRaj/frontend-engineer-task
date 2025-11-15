@@ -10,6 +10,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-defaulticon-compatibility";
 
 // TODO : Clicking a marker should ideally open the popup with the selected property details. Currently not implemented. Implement it.
+// POST FIX : The addition of eventHandlers prop along with the defined action over onClick event as to set the selected property and location opens up the popUp with the required data in the popup component.
 
 import { JSX, useEffect, useRef, useState } from "react";
 import Image from "next/image";
