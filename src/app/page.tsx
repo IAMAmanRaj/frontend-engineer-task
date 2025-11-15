@@ -1,7 +1,8 @@
 import { PropertyListing } from "@/data/property-listing";
 import MapCaller from "@/components/MapCaller";
+import Search from "./_components/Search";
 
-const apiUrl = process.env.API_URL;
+import PropertyList from "./_components/PropertyList";
 
 //TODO : Add meta data for this page
 // Page should serve via SSR
@@ -13,17 +14,29 @@ const apiUrl = process.env.API_URL;
 // Add pagination
 // You can modify the Property Listing however you want. If you feel like creating an API and implementing pagination via that, totally your call.
 
-export default async function Page() {
-  const data = await fetch(`${apiUrl}/api/property-listing`, {
-    cache: "no-store", 
-  });
-  const properties = await data.json();
-
-  console.log(properties);
+export default async function Page(props: {
+  searchParams?: Promise<{
+    name?: string;
+    developerName?: string;
+    micromarket?: string;
+  }>;
+}) {
+  const searchParams = await props.searchParams;
+  const query =
+    searchParams?.name ||
+    searchParams?.developerName ||
+    searchParams?.micromarket ||
+    "";
+  const currentPage = Number(1);
 
   return (
-    <div className="w-screen h-screen bg-black">
-      <MapCaller allFilteredData={PropertyListing} />
+    <div className="w-screen h-screen flex flex-col bg-white pt-5">
+      <div className="flex flex-row">
+        <Search placeholder="Search for Developers, Locations, or Projects" />
+      </div>
+      <PropertyList query={query} currentPage={currentPage} />
+
+      {/* <MapCaller allFilteredData={PropertyListing} /> */}
     </div>
   );
 }
