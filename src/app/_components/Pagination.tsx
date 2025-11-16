@@ -5,7 +5,6 @@ import {
   Pagination,
   PaginationContent,
   PaginationItem,
-  PaginationLink,
 } from "@/components/shadcn/ui/pagination";
 
 interface PaginationProps {
@@ -17,6 +16,8 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const currentPage = Number(searchParams.get("page")) || 1;
+
+  console.log("page count:", pageCount);
 
   const createPageURL = (pageNumber: number) => {
     const params = new URLSearchParams(searchParams);

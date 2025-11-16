@@ -9,27 +9,30 @@ export async function GET(req: Request) {
   const currentPage = Number(searchParams.get("page") || 1);
   const pageSize = 10;
 
-  if (!query) return NextResponse.json({ results: [] });
+  let matches: any[] = [];
 
-  const matches: any[] = [];
+  if (query) {
+    for (const p of projects) {
+      const name = p.name.toLowerCase();
+      const dev = p.developerName.toLowerCase();
+      const micro = p.micromarket.toLowerCase();
 
-  for (const p of projects) {
-    const name = p.name.toLowerCase();
-    const dev = p.developerName.toLowerCase();
-    const micro = p.micromarket.toLowerCase();
-
-    if (
-      name.startsWith(query) ||
-      dev.startsWith(query) ||
-      micro.startsWith(query)
-    ) {
-      matches.push({
-        label: p.name,
-        developer: p.developerName,
-        micromarket: p.micromarket,
-        fullItem: p,
-      });
+      if (
+        name.startsWith(query) ||
+        dev.startsWith(query) ||
+        micro.startsWith(query)
+      ) {
+        matches.push({
+          label: p.name,
+          developer: p.developerName,
+          micromarket: p.micromarket,
+          fullItem: p,
+        });
+      }
     }
+  } else {
+    console.log("No query provided, returning all projects.");
+    matches = projects;
   }
 
   const totalMatches = matches.length;

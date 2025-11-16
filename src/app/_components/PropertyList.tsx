@@ -15,8 +15,6 @@ export default function PropertyList({
 
   useEffect(() => {
     async function load() {
-      if (!query) return;
-
       const res = await fetch(
         `${apiUrl}/api/properties?query=${encodeURIComponent(
           query

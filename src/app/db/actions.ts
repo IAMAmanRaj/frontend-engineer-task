@@ -3,7 +3,8 @@ import { PropertyListing } from "@/data/property-listing";
 const projects = PropertyListing.projects;
 
 export async function getTotalPages(query: string): Promise<number> {
-  if (!query) return 0;
+  let maxPages = Math.ceil(projects.length / 10);
+  if (!query) return maxPages;
 
   const lowerQuery = query.toLowerCase();
 
