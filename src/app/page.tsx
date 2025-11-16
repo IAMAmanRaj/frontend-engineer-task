@@ -18,7 +18,7 @@ import { getTotalPages } from "./db/actions";
 
 export default async function Page(props: {
   searchParams?: Promise<{
-    query?:string;
+    query?: string;
     name?: string;
     developerName?: string;
     micromarket?: string;
@@ -27,6 +27,7 @@ export default async function Page(props: {
 }) {
   const searchParams = await props.searchParams;
   const query =
+    searchParams?.query ||
     searchParams?.name ||
     searchParams?.developerName ||
     searchParams?.micromarket ||

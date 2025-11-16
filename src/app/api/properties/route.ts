@@ -22,12 +22,15 @@ export async function GET(req: Request) {
         dev.startsWith(query) ||
         micro.startsWith(query)
       ) {
-        matches.push({
-          label: p.name,
-          developer: p.developerName,
-          micromarket: p.micromarket,
-          fullItem: p,
-        });
+        // matches.push({
+        //   label: p.name,
+        //   developer: p.developerName,
+        //   micromarket: p.micromarket,
+        //   fullItem: p,
+        // });
+        matches.push(
+          p,
+        );
       }
     }
   } else {
@@ -36,16 +39,16 @@ export async function GET(req: Request) {
   }
 
   const totalMatches = matches.length;
-  const totalPages = Math.ceil(totalMatches / pageSize);
+  // const totalPages = Math.ceil(totalMatches / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedResults = matches.slice(startIndex, endIndex);
 
   return NextResponse.json({
-    query,
-    currentPage,
+    // query,
+    // currentPage,
     totalMatches,
-    totalPages,
+    // totalPages,
     results: paginatedResults,
   });
 }
