@@ -51,7 +51,6 @@ export function GET(req: Request) {
   }
 
   return NextResponse.json({
-    suggestions: [...nameMatches, ...developerMatches, ...microMatches],
+    suggestions: [...developerMatches, ...microMatches, ...nameMatches],
   });
 }
-

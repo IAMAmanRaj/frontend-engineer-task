@@ -3,11 +3,10 @@ import { PropertyListing } from "@/data/property-listing";
 
 let projects = PropertyListing.projects;
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const query = body.query?.toLowerCase() || "";
-  const currentPage = body.currentPage || 1;
-  console.log("QUERY SENT:", query);
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const query = (searchParams.get("query") || "").toLowerCase();
+  const currentPage = Number(searchParams.get("page") || 1);
 
   if (!query) return NextResponse.json({ results: [] });
 

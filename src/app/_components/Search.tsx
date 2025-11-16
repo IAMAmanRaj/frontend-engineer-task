@@ -19,7 +19,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
       return;
     }
 
-    const response = await fetch(`${apiUrl}/api/search?q=${term}`, {
+    const response = await fetch(`${apiUrl}/api/search-suggestions?q=${term}`, {
       cache: "no-store",
     });
     const data = await response.json();

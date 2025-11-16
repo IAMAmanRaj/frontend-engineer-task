@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-
 export default function PropertyList({
   query,
   currentPage,
@@ -16,16 +15,13 @@ export default function PropertyList({
 
   useEffect(() => {
     async function load() {
-        if (!query) return;
+      if (!query) return;
 
-      const res = await fetch(`${apiUrl}/api/property-listing-data`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query,
-          currentPage,
-        }),
-      });
+      const res = await fetch(
+        `${apiUrl}/api/properties?query=${encodeURIComponent(
+          query
+        )}&page=${currentPage}`
+      );
 
       const data = await res.json();
       console.log(data, "Data");
