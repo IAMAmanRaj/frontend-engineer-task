@@ -7,6 +7,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = (searchParams.get("query") || "").toLowerCase();
   const currentPage = Number(searchParams.get("page") || 1);
+  const pageSize = 10;
 
   if (!query) return NextResponse.json({ results: [] });
 
@@ -31,9 +32,17 @@ export async function GET(req: Request) {
     }
   }
 
+  const totalMatches = matches.length;
+  const totalPages = Math.ceil(totalMatches / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedResults = matches.slice(startIndex, endIndex);
+
   return NextResponse.json({
     query,
     currentPage,
-    results: matches,
+    totalMatches,
+    totalPages,
+    results: paginatedResults,
   });
 }

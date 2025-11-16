@@ -3,6 +3,8 @@ import MapCaller from "@/components/MapCaller";
 import Search from "./_components/Search";
 
 import PropertyList from "./_components/PropertyList";
+import { PaginationComponent } from "./_components/Pagination";
+import { getTotalPages } from "./db/actions";
 
 //TODO : Add meta data for this page
 // Page should serve via SSR
@@ -16,9 +18,11 @@ import PropertyList from "./_components/PropertyList";
 
 export default async function Page(props: {
   searchParams?: Promise<{
+    query?:string;
     name?: string;
     developerName?: string;
     micromarket?: string;
+    page?: string;
   }>;
 }) {
   const searchParams = await props.searchParams;
@@ -27,14 +31,17 @@ export default async function Page(props: {
     searchParams?.developerName ||
     searchParams?.micromarket ||
     "";
-  const currentPage = Number(1);
+  const currentPageValue = Number(searchParams?.page) || 1;
+  const totalPages = await getTotalPages(query);
 
   return (
     <div className="w-screen h-screen flex flex-col bg-white pt-5">
       <div className="flex flex-row">
         <Search placeholder="Search for Developers, Locations, or Projects" />
       </div>
-      <PropertyList query={query} currentPage={currentPage} />
+      <PropertyList query={query} currentPage={currentPageValue} />
+
+      <PaginationComponent pageCount={totalPages} />
 
       {/* <MapCaller allFilteredData={PropertyListing} /> */}
     </div>

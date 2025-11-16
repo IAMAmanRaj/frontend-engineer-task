@@ -36,6 +36,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
       if (field === suggestion.type) params.set(field, suggestion.label);
       else params.delete(field);
     });
+    params.delete("page");
 
     replace(`${pathname}?${params.toString()}`);
 

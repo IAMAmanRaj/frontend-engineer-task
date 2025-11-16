@@ -24,12 +24,17 @@ export default function PropertyList({
       );
 
       const data = await res.json();
-      console.log(data, "Data");
+
+      console.log(data.query, "Query");
+      console.log(data.currentPage, "Current Page");
+      console.log(data.totalMatches, "Total Matches");
+      console.log(data.totalPages, "Total Pages");
+
       setProperties(data.results);
     }
 
     load();
-  }, [query]);
+  }, [query, currentPage]);
 
   console.log(properties);
 
