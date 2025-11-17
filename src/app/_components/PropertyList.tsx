@@ -14,6 +14,34 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
+const DEFAULTS = {
+  minBudget: "5000000",
+  maxBudget: "30000000",
+  sortType: "popularity",
+  sortOrder: "desc",
+  possession: "any",
+};
+
+const MIN_BUDGET_OPTIONS = [
+  { label: "50L", value: 5000000 },
+  { label: "75L", value: 7500000 },
+  { label: "1 Cr", value: 10000000 },
+  { label: "1.5 Cr", value: 15000000 },
+  { label: "2 Cr", value: 20000000 },
+  { label: "2.5 Cr", value: 25000000 },
+  { label: "3 Cr", value: 30000000 },
+];
+
+const MAX_BUDGET_OPTIONS = [
+  { label: "3 Cr", value: 30000000 },
+  { label: "3.5 Cr", value: 35000000 },
+  { label: "4 Cr", value: 40000000 },
+  { label: "4.5 Cr", value: 45000000 },
+  { label: "5 Cr", value: 50000000 },
+  { label: "10 Cr", value: 100000000 },
+  { label: "10 Cr+", value: 500000000 },
+];
+
 export default function PropertyList({
   query,
   currentPage,
@@ -27,28 +55,58 @@ export default function PropertyList({
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [openSort, setOpenSort] = useState(false);
+  const [selectedSort, setSelectedSort] = useState({
+    type: "popularity",
+    order: "desc",
+  });
 
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const DEFAULTS = {
-    minBudget: "15000000",
-    maxBudget: "50000000",
-    sortType: "popularity",
-    sortOrder: "desc",
-    possession: "any",
-  };
+  const searchParamsString = searchParams.toString();
 
   const getParam = (key: keyof typeof DEFAULTS) => {
     return searchParams.get(key) ?? DEFAULTS[key];
   };
 
+  const [openBudget, setOpenBudget] = useState(false);
+
+  const [selectedMin, setSelectedMin] = useState(
+    Number(getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value)
+  );
+
+  const [selectedMax, setSelectedMax] = useState(
+    Number(
+      getParam("maxBudget") ??
+        MAX_BUDGET_OPTIONS[MAX_BUDGET_OPTIONS.length - 1].value
+    )
+  );
+
+  const currentMin = searchParams.get("minBudget") ?? DEFAULTS.minBudget;
+  const currentMax = searchParams.get("maxBudget") ?? DEFAULTS.maxBudget;
+
+  const isBudgetChanged =
+    currentMin !== selectedMin.toString() ||
+    currentMax !== selectedMax.toString();
+  const isBudgetDefault =
+    currentMin === DEFAULTS.minBudget && currentMax === DEFAULTS.maxBudget;
+
+  const hasAnyFilter =
+    query ||
+    searchParams.get("minBudget") ||
+    searchParams.get("maxBudget") ||
+    searchParams.get("developerName") ||
+    searchParams.get("micromarket") ||
+    searchParams.get("name");
+
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
-        const safeMin = getParam("minBudget");
-        const safeMax = getParam("maxBudget");
+        const safeMin = getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value;
+        const safeMax =
+          getParam("maxBudget") ??
+          MAX_BUDGET_OPTIONS[MAX_BUDGET_OPTIONS.length - 1].value;
+
         const safeSortType = getParam("sortType");
         const safeSortOrder = getParam("sortOrder");
         const safePossession = getParam("possession");
@@ -77,7 +135,7 @@ export default function PropertyList({
     }
 
     load();
-  }, [query, currentPage, searchParams]);
+  }, [currentPage, searchParamsString]);
 
   const updateParamsBatch = (entries: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -93,13 +151,56 @@ export default function PropertyList({
   };
 
   const handleBudgetChange = (min: number, max: number) => {
+    const currentMin = getParam("minBudget");
+    const currentMax = getParam("maxBudget");
+
+
+    if (
+      currentMin === selectedMin.toString() &&
+      currentMax === selectedMax.toString()
+    ) {
+      console.log("No changes in budget, closing.");
+      setOpenBudget(false);
+      return;
+    }
+
+    console.log("Has changed -> Applying budget filters:", min, max);
+
     updateParamsBatch({
       minBudget: min.toString(),
       maxBudget: max.toString(),
     });
+
+    setOpenBudget(false);
+  };
+
+  const handleClearBudget = () => {
+    const currentMin = getParam("minBudget");
+    const currentMax = getParam("maxBudget");
+
+    console.log("current:", currentMin, currentMax);
+    console.log("Selected:", selectedMin, selectedMax);
+
+    if (
+      currentMin === DEFAULTS.minBudget &&
+      currentMax === DEFAULTS.maxBudget
+    ) {
+      setOpenBudget(false);
+      return;
+    }
+    setSelectedMax(Number(DEFAULTS.maxBudget));
+    setSelectedMin(Number(DEFAULTS.minBudget));
+
+    updateParamsBatch({
+      minBudget: DEFAULTS.minBudget,
+      maxBudget: DEFAULTS.maxBudget,
+    });
+
+    setOpenBudget(false);
   };
 
   const handleSortSelect = (type: string, order: string) => {
+    setSelectedSort({ type, order });
     setOpenSort(false);
 
     updateParamsBatch({
@@ -157,6 +258,94 @@ export default function PropertyList({
         <div className="flex gap-3 mb-6 flex-wrap">
           <div className="relative inline-block text-left">
             <button
+              onClick={() => setOpenBudget(!openBudget)}
+              className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
+            >
+              Budget
+            </button>
+
+            {openBudget && (
+              <div className="absolute mt-2 w-64 rounded-xl shadow-lg bg-white border border-gray-200 p-4 z-20">
+              
+                <h4 className="font-semibold text-sm mb-2">Minimum Budget</h4>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {MIN_BUDGET_OPTIONS.map((item) => (
+                    <button
+                      key={item.value}
+                      onClick={() => {
+                        setSelectedMin(item.value);
+
+                        if (selectedMax < item.value) {
+                          setSelectedMax(item.value);
+                        }
+                      }}
+                      className={`px-3 py-2 rounded-lg border text-sm 
+              ${
+                selectedMin === item.value
+                  ? "bg-[#FF6D33] text-white border-[#FF6D33]"
+                  : "bg-white border-gray-300 text-gray-700"
+              }
+            `}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+
+               
+                <h4 className="font-semibold text-sm mb-2">Maximum Budget</h4>
+                <div className="grid grid-cols-2 gap-2 mb-3 max-h-40 overflow-y-auto">
+                  {MAX_BUDGET_OPTIONS.filter((x) => x.value >= selectedMin).map(
+                    (item) => (
+                      <button
+                        key={item.value}
+                        onClick={() => setSelectedMax(item.value)}
+                        className={`px-3 py-2 rounded-lg border text-sm 
+                ${
+                  selectedMax === item.value
+                    ? "bg-[#FF6D33] text-white border-[#FF6D33]"
+                    : "bg-white border-gray-300 text-gray-700"
+                }
+              `}
+                      >
+                        {item.label}
+                      </button>
+                    )
+                  )}
+                </div>
+
+        
+                <div className="flex justify-between mt-4">
+                  <button
+                    onClick={handleClearBudget}
+                    disabled={isBudgetDefault} // disable if already default
+                    className={`px-3 py-2 text-sm rounded-lg ${
+                      isBudgetDefault
+                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        : "bg-gray-200 hover:bg-gray-300"
+                    }`}
+                  >
+                    Clear
+                  </button>
+
+                  <button
+                    onClick={() => handleBudgetChange(selectedMin, selectedMax)}
+                    disabled={!isBudgetChanged} // disable if nothing changed
+                    className={`px-4 py-2 text-sm rounded-lg ${
+                      isBudgetChanged
+                        ? "bg-[#FF6D33] text-white hover:bg-black"
+                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    }`}
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="relative inline-block text-left">
+            <button
               onClick={() => setOpenSort(!openSort)}
               className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
             >
@@ -166,28 +355,47 @@ export default function PropertyList({
             {openSort && (
               <div className="absolute mt-2 w-52 rounded-xl shadow-lg bg-white border border-gray-200 z-20">
                 <ul className="py-2 text-sm text-gray-700">
+             
                   <li>
                     <button
                       onClick={() => handleSortSelect("price", "desc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "price" && selectedSort.order === "desc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Price: High → Low
                     </button>
                   </li>
 
+          
                   <li>
                     <button
                       onClick={() => handleSortSelect("price", "asc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "price" && selectedSort.order === "asc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Price: Low → High
                     </button>
                   </li>
 
+            
                   <li>
                     <button
                       onClick={() => handleSortSelect("possession", "desc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "possession" &&
+                  selectedSort.order === "desc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Possession: New → Old
                     </button>
@@ -196,25 +404,45 @@ export default function PropertyList({
                   <li>
                     <button
                       onClick={() => handleSortSelect("possession", "asc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "possession" &&
+                  selectedSort.order === "asc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Possession: Old → New
                     </button>
                   </li>
 
+                
                   <li>
                     <button
                       onClick={() => handleSortSelect("popularity", "desc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "popularity" &&
+                  selectedSort.order === "desc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Propscore: High → Low
                     </button>
                   </li>
 
+                 
                   <li>
                     <button
                       onClick={() => handleSortSelect("popularity", "asc")}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
+                ${
+                  selectedSort.type === "popularity" &&
+                  selectedSort.order === "asc"
+                    ? "bg-[#FF6D33] text-white"
+                    : ""
+                }`}
                     >
                       Propscore: Low → High
                     </button>
@@ -226,11 +454,17 @@ export default function PropertyList({
         </div>
 
         <div className="mb-6">
-          {query && (
+          {hasAnyFilter && (
             <div className="space-y-2">
               <h2 className="text-2xl md:text-3xl font-bold text-black">
-                Showing results for{" "}
-                <span className="text-[#FF6D33]">"{query}"</span>
+                {query ? (
+                  <>
+                    Showing results for{" "}
+                    <span className="text-[#FF6D33]">"{query}"</span>
+                  </>
+                ) : (
+                  <>Showing filtered results</>
+                )}
               </h2>
 
               <p className="text-sm md:text-base text-gray-600">

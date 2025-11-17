@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
+import { minify } from "next/dist/build/swc/generated-native";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -17,10 +18,9 @@ export default function Search({ placeholder }: { placeholder: string }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-  const handleSearch = useDebouncedCallback(async (term: string) => {
+  const debouncedSearch = useDebouncedCallback(async (term: string) => {
     if (!term.trim()) {
       setSuggestions([]);
-
       setSelectedIndex(-1);
       return;
     }
@@ -61,23 +61,48 @@ export default function Search({ placeholder }: { placeholder: string }) {
   }
 
   function applyManualSearch() {
-    if (!inputValue.trim()) {
-      const params = new URLSearchParams(searchParams);
-      params.delete("page");
-      params.delete("name");
-      params.delete("developerName");
-      params.delete("micromarket");
-      params.delete("search");
-      return;
-    }
+    // Cancel any pending debounced search
+    debouncedSearch.cancel();
+
+    const trimmed = inputValue.trim();
 
     const params = new URLSearchParams(searchParams);
 
-    params.set("search", inputValue.trim());
-    params.delete("page");
+    const DEFAULTS = {
+      minBudget : "5000000",
+      maxBudget : "30000000",
+      sortType: "popularity",
+      sortOrder: "desc",
+      possession: "any",
+      page: "1",
+    };
+
+    if (!trimmed) {
+      params.delete("search");
+      params.delete("name");
+      params.delete("developerName");
+      params.delete("micromarket");
+
+      Object.entries(DEFAULTS).forEach(([key, value]) => {
+        if (!params.has(key)) params.set(key, value);
+      });
+
+      params.set("page", DEFAULTS.page);
+
+      replace(`${pathname}?${params.toString()}`);
+      return;
+    }
+
+    params.set("search", trimmed);
     params.delete("name");
     params.delete("developerName");
     params.delete("micromarket");
+
+    Object.entries(DEFAULTS).forEach(([key, value]) => {
+      if (!params.has(key)) params.set(key, value);
+    });
+
+    params.set("page", DEFAULTS.page);
 
     replace(`${pathname}?${params.toString()}`);
 
@@ -144,7 +169,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-    handleSearch(value);
+    debouncedSearch(value);
   };
 
   return (

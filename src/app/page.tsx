@@ -55,8 +55,8 @@ export default async function Page(props: {
   const currentPageValue = Number(params?.page || 1);
 
  const filters = {
-  minBudget: Number(getParam("minBudget")),
-  maxBudget: Number(getParam("maxBudget")),
+  minBudget: Number(getParam("minBudget")) ?? 500000,
+  maxBudget: Number(getParam("maxBudget")) ?? Infinity,
 };
 
 const totalPages = await getTotalPages(query, filters);
