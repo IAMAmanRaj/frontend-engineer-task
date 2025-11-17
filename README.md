@@ -14,6 +14,11 @@ cd frontend-engineer-task
 # Install dependencies:
 pnpm i
 
+🔧 Environment Setup (Important)
+Before running the development server, you must create a .env.local file in the project root and add this environment variable :
+NEXT_PUBLIC_API_URL=http://localhost:{port_number}
+
+
 
 # Start dev server:
 pnpm run dev
