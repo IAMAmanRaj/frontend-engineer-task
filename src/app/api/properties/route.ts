@@ -8,11 +8,16 @@ export async function GET(req: Request) {
   const query = (searchParams.get("query") || "").toLowerCase();
 
   console.log("Received search params:", Array.from(searchParams.entries()));
+
   const minBudget = Number(searchParams.get("minBudget") || 0);
   const maxBudget = Number(searchParams.get("maxBudget") || Infinity);
 
   const sortType = searchParams.get("sortType") || "popularity";
   const sortOrder = searchParams.get("sortOrder") || "desc";
+
+  const apartmentsParam = searchParams.get("apartments");
+  const villasParam = searchParams.get("villas");
+  const plotAreaParam = searchParams.get("plotArea");
 
   const currentPage = Number(searchParams.get("page") || 1);
   const pageSize = 10;
@@ -30,12 +35,6 @@ export async function GET(req: Request) {
         dev.startsWith(query) ||
         micro.startsWith(query)
       ) {
-        // matches.push({
-        //   label: p.name,
-        //   developer: p.developerName,
-        //   micromarket: p.micromarket,
-        //   fullItem: p,
-        // });
         matches.push(p);
       }
     }
@@ -47,12 +46,75 @@ export async function GET(req: Request) {
   console.log(matches.length, "matches found before filtering.");
   console.log("budget filter:", minBudget, "-", maxBudget);
 
+  // Budget filter
   matches = matches.filter(
     (p) => p.minPrice >= minBudget && p.maxPrice <= maxBudget
   );
 
   console.log(matches.length, "matches found after budget filtering.");
 
+  if (apartmentsParam || villasParam || plotAreaParam) {
+    matches = matches.filter((p) => {
+      const propertyType = p.type.toLowerCase();
+
+      if (apartmentsParam) {
+        const selectedBHKs = apartmentsParam.split("+").map(Number);
+
+        if (
+          propertyType.includes("apartment") ||
+          propertyType.includes("flat")
+        ) {
+          const hasMatchingBHK = p.typologies.some((typology: string) => {
+            const bhkMatch = typology.match(/(\d+)\s*BHK/i);
+            if (bhkMatch) {
+              const bhkValue = Number(bhkMatch[1]);
+              return selectedBHKs.includes(bhkValue);
+            }
+            return false;
+          });
+
+          if (hasMatchingBHK) return true;
+        }
+      }
+
+      if (villasParam) {
+        const selectedBHKs = villasParam.split("+").map(Number);
+
+        if (propertyType.includes("villa")) {
+          const hasMatchingBHK = p.typologies.some((typology: string) => {
+            const bhkMatch = typology.match(/(\d+)\s*BHK/i);
+            if (bhkMatch) {
+              const bhkValue = Number(bhkMatch[1]);
+              return selectedBHKs.includes(bhkValue);
+            }
+            return false;
+          });
+
+          if (hasMatchingBHK) return true;
+        }
+      }
+
+      if (plotAreaParam) {
+        const minPlotArea = Number(plotAreaParam);
+
+        if (
+          propertyType.includes("plot") ||
+          propertyType.includes("row house") ||
+          propertyType === "land"
+        ) {
+          if (p.minSaleableArea >= minPlotArea) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+
+    console.log(matches.length, "matches found after property type filtering.");
+  }
+
+  // Sorting
   matches.sort((a, b) => {
     let valueA, valueB;
 
@@ -67,7 +129,7 @@ export async function GET(req: Request) {
         valueB = new Date(b.possessionDate).getTime();
         break;
 
-      default: 
+      default: // popularity
         valueA = a.propscore;
         valueB = b.propscore;
     }

@@ -7,20 +7,23 @@ import {
   FaRulerCombined,
   FaHome,
   FaStar,
+  FaMap,
+  FaFilter,
+  FaSortAmountDown,
 } from "react-icons/fa";
 import { MdApartment } from "react-icons/md";
+import { BiRupee } from "react-icons/bi";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { PaginationComponent } from "./Pagination";
 
-import dynamic from 'next/dynamic';
+import dynamic from "next/dynamic";
 
 const LazyMap = dynamic(() => import("@/components/discovery-map"), {
-   ssr: false,
+  ssr: false,
   loading: () => <p>Loading...</p>,
 });
-
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -52,6 +55,14 @@ const MAX_BUDGET_OPTIONS = [
   { label: "10 Cr+", value: 500000000 },
 ];
 
+const BHK_OPTIONS = [
+  { label: "1 BHK", value: 1 },
+  { label: "2 BHK", value: 2 },
+  { label: "3 BHK", value: 3 },
+  { label: "4 BHK", value: 4 },
+  { label: "5 BHK", value: 5 },
+];
+
 export default function PropertyView({
   query,
   currentPage,
@@ -77,6 +88,14 @@ export default function PropertyView({
   const getParam = (key: keyof typeof DEFAULTS) => {
     return searchParams.get(key) ?? DEFAULTS[key];
   };
+
+  const [openType, setOpenType] = useState(false);
+  const [selectedTypeTab, setSelectedTypeTab] = useState<
+    "Flat" | "Villa" | "Plot"
+  >("Flat");
+  const [selectedFlats, setSelectedFlats] = useState<number[]>([]);
+  const [selectedVillas, setSelectedVillas] = useState<number[]>([]);
+  const [plotArea, setPlotArea] = useState<string>("");
 
   const [openBudget, setOpenBudget] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -110,6 +129,28 @@ export default function PropertyView({
     searchParams.get("name");
 
   useEffect(() => {
+    const apartments = searchParams.get("apartments");
+    const villas = searchParams.get("villas");
+    const plot = searchParams.get("plotArea");
+
+    if (apartments) {
+      setSelectedFlats(apartments.split("+").map(Number));
+    } else {
+      setSelectedFlats([]);
+    }
+    if (villas) {
+      setSelectedVillas(villas.split("+").map(Number));
+    } else {
+      setSelectedVillas([]);
+    }
+    if (plot) {
+      setPlotArea(plot);
+    } else {
+      setPlotArea("");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
     async function load() {
       setLoading(true);
       try {
@@ -122,17 +163,27 @@ export default function PropertyView({
         const safeSortOrder = getParam("sortOrder");
         const safePossession = getParam("possession");
 
-        const url = `${apiUrl}/api/properties?query=${encodeURIComponent(
-          query
-        )}&page=${currentPage}&minBudget=${safeMin}&maxBudget=${safeMax}&sortType=${safeSortType}&sortOrder=${safeSortOrder}&possession=${safePossession}`;
+        const apartmentsParam = searchParams.get("apartments");
+        const villasParam = searchParams.get("villas");
+        const plotAreaParam = searchParams.get("plotArea");
+
+        const queryParams = new URLSearchParams();
+        queryParams.set("query", query);
+        queryParams.set("page", currentPage.toString());
+        queryParams.set("minBudget", safeMin.toString());
+        queryParams.set("maxBudget", safeMax.toString());
+        queryParams.set("sortType", safeSortType);
+        queryParams.set("sortOrder", safeSortOrder);
+        queryParams.set("possession", safePossession);
+
+        if (apartmentsParam) queryParams.set("apartments", apartmentsParam);
+        if (villasParam) queryParams.set("villas", villasParam);
+        if (plotAreaParam) queryParams.set("plotArea", plotAreaParam);
+
+        const url = `${apiUrl}/api/properties?${queryParams.toString()}`;
 
         const res = await fetch(url);
         const data = await res.json();
-
-        console.log(data.query, "Query");
-        console.log(data.currentPage, "Current Page");
-        console.log(data.totalMatches, "Total Matches");
-        console.log(data.totalPages, "Total Pages");
 
         setProperties(data.results);
         setTotalMatches(data.totalMatches || 0);
@@ -161,6 +212,88 @@ export default function PropertyView({
     router.push(`?${params.toString()}`);
   };
 
+  const toggleFlatSelection = (bhk: number) => {
+    setSelectedFlats((prev) =>
+      prev.includes(bhk) ? prev.filter((b) => b !== bhk) : [...prev, bhk]
+    );
+  };
+
+  const toggleVillaSelection = (bhk: number) => {
+    setSelectedVillas((prev) =>
+      prev.includes(bhk) ? prev.filter((b) => b !== bhk) : [...prev, bhk]
+    );
+  };
+
+  const handleApplyTypeFilters = () => {
+    const updates: Record<string, string> = {};
+
+    if (selectedFlats.length > 0) {
+      updates.apartments = selectedFlats.sort((a, b) => a - b).join("+");
+    } else {
+      updates.apartments = "";
+    }
+
+    if (selectedVillas.length > 0) {
+      updates.villas = selectedVillas.sort((a, b) => a - b).join("+");
+    } else {
+      updates.villas = "";
+    }
+
+    if (plotArea && Number(plotArea) > 0) {
+      updates.plotArea = plotArea;
+    } else {
+      updates.plotArea = "";
+    }
+
+    updateParamsBatch(updates);
+    setOpenType(false);
+  };
+
+  const handleClearTypeFilters = () => {
+    setSelectedFlats([]);
+    setSelectedVillas([]);
+    setPlotArea("");
+
+    updateParamsBatch({
+      apartments: "",
+      villas: "",
+      plotArea: "",
+    });
+
+    setOpenType(false);
+  };
+
+  const isTypeFilterActive =
+    searchParams.get("apartments") ||
+    searchParams.get("villas") ||
+    searchParams.get("plotArea");
+
+  const isBudgetActive =
+    searchParams.get("minBudget") !== DEFAULTS.minBudget ||
+    searchParams.get("maxBudget") !== DEFAULTS.maxBudget;
+
+  const isTypeChanged = () => {
+    const currentApartments = searchParams.get("apartments") || "";
+    const currentVillas = searchParams.get("villas") || "";
+    const currentPlotArea = searchParams.get("plotArea") || "";
+
+    const newApartments =
+      selectedFlats.length > 0
+        ? selectedFlats.sort((a, b) => a - b).join("+")
+        : "";
+    const newVillas =
+      selectedVillas.length > 0
+        ? selectedVillas.sort((a, b) => a - b).join("+")
+        : "";
+    const newPlotArea = plotArea && Number(plotArea) > 0 ? plotArea : "";
+
+    return (
+      currentApartments !== newApartments ||
+      currentVillas !== newVillas ||
+      currentPlotArea !== newPlotArea
+    );
+  };
+
   const handleBudgetChange = (min: number, max: number) => {
     const currentMin = getParam("minBudget");
     const currentMax = getParam("maxBudget");
@@ -169,12 +302,9 @@ export default function PropertyView({
       currentMin === selectedMin.toString() &&
       currentMax === selectedMax.toString()
     ) {
-      console.log("No changes in budget, closing.");
       setOpenBudget(false);
       return;
     }
-
-    console.log("Has changed -> Applying budget filters:", min, max);
 
     updateParamsBatch({
       minBudget: min.toString(),
@@ -187,9 +317,6 @@ export default function PropertyView({
   const handleClearBudget = () => {
     const currentMin = getParam("minBudget");
     const currentMax = getParam("maxBudget");
-
-    console.log("current:", currentMin, currentMax);
-    console.log("Selected:", selectedMin, selectedMax);
 
     if (
       currentMin === DEFAULTS.minBudget &&
@@ -263,203 +390,431 @@ export default function PropertyView({
   }
 
   return (
-    <div className="flex-1  overflow-none px-4 md:px-6 lg:px-8 py-6">
+    <div className="flex-1 overflow-none px-4 md:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto w-full overflow-x-hidden">
-        <div className="flex gap-3 mb-6 flex-wrap relative z-30">
-          <div className="relative inline-block text-left">
-            <button
-              onClick={() => setOpenBudget(!openBudget)}
-              className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
-            >
-              Budget
-            </button>
+        <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setOpenType(!openType)}
+                className={`group flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 shadow-sm ${
+                  isTypeFilterActive
+                    ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:text-[#FF6D33] hover:shadow-md"
+                }`}
+              >
+                <FaHome
+                  className={`text-lg transition-transform duration-300 ${
+                    openType ? "rotate-12" : ""
+                  }`}
+                />
+                <span>Property Type</span>
+                {isTypeFilterActive && (
+                  <span className="bg-white text-[#FF6D33] text-xs font-bold px-2 py-0.5 rounded-full">
+                    Active
+                  </span>
+                )}
+              </motion.button>
 
-            {openBudget && (
-              <div className="absolute mt-2 w-64 rounded-xl shadow-lg bg-white border border-gray-200 p-4 z-20">
-                <h4 className="font-semibold text-sm mb-2">Minimum Budget</h4>
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {MIN_BUDGET_OPTIONS.map((item) => (
-                    <button
-                      key={item.value}
-                      onClick={() => {
-                        setSelectedMin(item.value);
+              <AnimatePresence>
+                {openType && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute mt-3 w-80 rounded-2xl shadow-2xl bg-white border border-gray-200 p-5 z-30"
+                  >
+                    <div className="flex gap-2 mb-4 bg-gray-100 rounded-xl p-1">
+                      {["Flat", "Villa", "Plot"].map((tab) => (
+                        <button
+                          key={tab}
+                          onClick={() =>
+                            setSelectedTypeTab(tab as "Flat" | "Villa" | "Plot")
+                          }
+                          className={`flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg transition-all duration-300 ${
+                            selectedTypeTab === tab
+                              ? "bg-white text-[#FF6D33] shadow-md"
+                              : "text-gray-600 hover:text-gray-900"
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
 
-                        if (selectedMax < item.value) {
-                          setSelectedMax(item.value);
-                        }
-                      }}
-                      className={`px-3 py-2 rounded-lg border text-sm 
-              ${
-                selectedMin === item.value
-                  ? "bg-[#FF6D33] text-white border-[#FF6D33]"
-                  : "bg-white border-gray-300 text-gray-700"
-              }
-            `}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
+                    {selectedTypeTab === "Flat" && (
+                      <div>
+                        <h4 className="font-bold text-sm mb-3 text-gray-800">
+                          Select BHK
+                        </h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {BHK_OPTIONS.map((option) => (
+                            <motion.button
+                              key={option.value}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => toggleFlatSelection(option.value)}
+                              className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all duration-300 ${
+                                selectedFlats.includes(option.value)
+                                  ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:shadow-md"
+                              }`}
+                            >
+                              {option.label}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
-                <h4 className="font-semibold text-sm mb-2">Maximum Budget</h4>
-                <div className="grid grid-cols-2 gap-2 mb-3 max-h-40 overflow-y-auto">
-                  {MAX_BUDGET_OPTIONS.filter((x) => x.value >= selectedMin).map(
-                    (item) => (
-                      <button
-                        key={item.value}
-                        onClick={() => setSelectedMax(item.value)}
-                        className={`px-3 py-2 rounded-lg border text-sm 
-                ${
-                  selectedMax === item.value
-                    ? "bg-[#FF6D33] text-white border-[#FF6D33]"
-                    : "bg-white border-gray-300 text-gray-700"
-                }
-              `}
+                    {selectedTypeTab === "Villa" && (
+                      <div>
+                        <h4 className="font-bold text-sm mb-3 text-gray-800">
+                          Select BHK
+                        </h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          {BHK_OPTIONS.map((option) => (
+                            <motion.button
+                              key={option.value}
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => toggleVillaSelection(option.value)}
+                              className={`px-3 py-2.5 rounded-xl border-2 text-sm font-medium transition-all duration-300 ${
+                                selectedVillas.includes(option.value)
+                                  ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
+                                  : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:shadow-md"
+                              }`}
+                            >
+                              {option.label}
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedTypeTab === "Plot" && (
+                      <div>
+                        <h4 className="font-bold text-sm mb-3 text-gray-800">
+                          Minimum Plot Area (sq.ft)
+                        </h4>
+                        <input
+                          type="number"
+                          value={plotArea}
+                          onChange={(e) => setPlotArea(e.target.value)}
+                          placeholder="e.g., 2000"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6D33] focus:border-transparent transition-all"
+                          min="0"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex justify-between mt-5 pt-4 border-t border-gray-200">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleClearTypeFilters}
+                        disabled={!isTypeFilterActive}
+                        className={`px-4 py-2.5 text-sm font-medium rounded-xl transition-all ${
+                          isTypeFilterActive
+                            ? "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                            : "bg-gray-50 text-gray-400 cursor-not-allowed"
+                        }`}
                       >
-                        {item.label}
-                      </button>
-                    )
-                  )}
-                </div>
+                        Clear
+                      </motion.button>
 
-                <div className="flex justify-between mt-4">
-                  <button
-                    onClick={handleClearBudget}
-                    disabled={isBudgetDefault}
-                    className={`px-3 py-2 text-sm rounded-lg ${
-                      isBudgetDefault
-                        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                        : "bg-gray-200 hover:bg-gray-300"
-                    }`}
-                  >
-                    Clear
-                  </button>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleApplyTypeFilters}
+                        disabled={!isTypeChanged()}
+                        className={`px-6 py-2.5 text-sm font-medium rounded-xl transition-all ${
+                          isTypeChanged()
+                            ? "bg-[#FF6D33] text-white hover:bg-black shadow-lg shadow-orange-200"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        Apply
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-                  <button
-                    onClick={() => handleBudgetChange(selectedMin, selectedMax)}
-                    disabled={!isBudgetChanged}
-                    className={`px-4 py-2 text-sm rounded-lg ${
-                      isBudgetChanged
-                        ? "bg-[#FF6D33] text-white hover:bg-black"
-                        : "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    }`}
+            <div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setOpenBudget(!openBudget)}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all duration-300 shadow-sm ${
+                  isBudgetActive
+                    ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:text-[#FF6D33] hover:shadow-md"
+                }`}
+              >
+                <BiRupee
+                  className={`text-lg transition-transform duration-300 ${
+                    openBudget ? "rotate-12" : ""
+                  }`}
+                />
+                <span>Budget</span>
+                {isBudgetActive && (
+                  <span className="bg-white text-[#FF6D33] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                    Active
+                  </span>
+                )}
+              </motion.button>
+
+              <AnimatePresence>
+                {openBudget && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute w-[400px] mt-2 rounded-xl shadow-xl bg-white border border-gray-200 p-3 z-30"
                   >
-                    Apply
-                  </button>
-                </div>
-              </div>
-            )}
+                    <h4 className="font-bold text-xs mb-2 text-gray-800">
+                      Minimum Budget
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1 mb-3">
+                      {MIN_BUDGET_OPTIONS.map((item) => (
+                        <motion.button
+                          key={item.value}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => {
+                            setSelectedMin(item.value);
+                            if (selectedMax < item.value)
+                              setSelectedMax(item.value);
+                          }}
+                          className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-300 ${
+                            selectedMin === item.value
+                              ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow"
+                              : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:shadow-sm"
+                          }`}
+                        >
+                          {item.label}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    <h4 className="font-bold text-xs mb-2 text-gray-800">
+                      Maximum Budget
+                    </h4>
+                    <div className="grid grid-cols-2 gap-1 mb-3">
+                      {MAX_BUDGET_OPTIONS.filter(
+                        (x) => x.value >= selectedMin
+                      ).map((item) => (
+                        <motion.button
+                          key={item.value}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => setSelectedMax(item.value)}
+                          className={`px-2 py-1.5 rounded-lg border text-xs font-medium transition-all duration-300 ${
+                            selectedMax === item.value
+                              ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow"
+                              : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:shadow-sm"
+                          }`}
+                        >
+                          {item.label}
+                        </motion.button>
+                      ))}
+                    </div>
+
+                    <div className="flex justify-between mt-3 pt-2 border-t border-gray-200">
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleClearBudget}
+                        disabled={isBudgetDefault}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                          isBudgetDefault
+                            ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                            : "bg-gray-100 hover:bg-gray-200 text-gray-700"
+                        }`}
+                      >
+                        Clear
+                      </motion.button>
+
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() =>
+                          handleBudgetChange(selectedMin, selectedMax)
+                        }
+                        disabled={!isBudgetChanged}
+                        className={`px-4 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                          isBudgetChanged
+                            ? "bg-[#FF6D33] text-white hover:bg-black shadow shadow-orange-200"
+                            : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                        }`}
+                      >
+                        Apply
+                      </motion.button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setOpenSort(!openSort)}
+                className="group flex items-center gap-2 px-5 py-3 rounded-xl border-2 text-sm font-medium transition-all duration-300 shadow-sm bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:text-[#FF6D33] hover:shadow-md"
+              >
+                <FaSortAmountDown
+                  className={`text-lg transition-transform duration-300 ${
+                    openSort ? "rotate-180" : ""
+                  }`}
+                />
+                <span>Sort</span>
+              </motion.button>
+
+              <AnimatePresence>
+                {openSort && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute mt-3 w-56 rounded-2xl shadow-2xl bg-white border border-gray-200 overflow-hidden z-30"
+                  >
+                    <ul className="py-2">
+                      {[
+                        {
+                          label: "Price: High → Low",
+                          type: "price",
+                          order: "desc",
+                        },
+                        {
+                          label: "Price: Low → High",
+                          type: "price",
+                          order: "asc",
+                        },
+                        {
+                          label: "Possession: New → Old",
+                          type: "possession",
+                          order: "desc",
+                        },
+                        {
+                          label: "Possession: Old → New",
+                          type: "possession",
+                          order: "asc",
+                        },
+                        {
+                          label: "Propscore: High → Low",
+                          type: "popularity",
+                          order: "desc",
+                        },
+                        {
+                          label: "Propscore: Low → High",
+                          type: "popularity",
+                          order: "asc",
+                        },
+                      ].map((option) => (
+                        <li key={`${option.type}-${option.order}`}>
+                          <motion.button
+                            whileHover={{ x: 4 }}
+                            onClick={() =>
+                              handleSortSelect(option.type, option.order)
+                            }
+                            className={`w-full text-left px-5 py-3 text-sm font-medium transition-all duration-200 ${
+                              selectedSort.type === option.type &&
+                              selectedSort.order === option.order
+                                ? "bg-[#FF6D33] text-white"
+                                : "text-gray-700 hover:bg-gray-50"
+                            }`}
+                          >
+                            {option.label}
+                          </motion.button>
+                        </li>
+                      ))}
+                    </ul>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div className="ml-auto">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowMap((prev) => !prev)}
+                className={`group relative flex items-center gap-3 px-6 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-300 overflow-hidden ${
+                  showMap
+                    ? "bg-gradient-to-r from-[#FF6D33] to-[#ff8555] text-white border-[#FF6D33] shadow-xl shadow-orange-300"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:shadow-lg"
+                }`}
+              >
+                <div
+                  className={`absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-700 ${
+                    showMap ? "translate-x-full" : "-translate-x-full"
+                  }`}
+                />
+
+                <FaMap
+                  className={`text-xl z-10 transition-all duration-300 ${
+                    showMap ? "rotate-12 scale-110" : ""
+                  }`}
+                />
+                <span className="z-10">
+                  {showMap ? "Close Map" : "Map View"}
+                </span>
+
+                {showMap && (
+                  <span className="absolute right-2 top-2 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                  </span>
+                )}
+              </motion.button>
+            </div>
           </div>
 
-          <div className="relative inline-block text-left">
-            <button
-              onClick={() => setOpenSort(!openSort)}
-              className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
+          {(isTypeFilterActive || isBudgetActive) && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-4 pt-4 border-t border-gray-200"
             >
-              Sort
-            </button>
-
-            {openSort && (
-              <div className="absolute mt-2 w-52 rounded-xl shadow-lg bg-white border border-gray-200 z-20">
-                <ul className="py-2 text-sm text-gray-700">
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("price", "desc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "price" && selectedSort.order === "desc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Price: High → Low
-                    </button>
-                  </li>
-
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("price", "asc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "price" && selectedSort.order === "asc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Price: Low → High
-                    </button>
-                  </li>
-
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("possession", "desc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "possession" &&
-                  selectedSort.order === "desc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Possession: New → Old
-                    </button>
-                  </li>
-
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("possession", "asc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "possession" &&
-                  selectedSort.order === "asc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Possession: Old → New
-                    </button>
-                  </li>
-
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("popularity", "desc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "popularity" &&
-                  selectedSort.order === "desc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Propscore: High → Low
-                    </button>
-                  </li>
-
-                  <li>
-                    <button
-                      onClick={() => handleSortSelect("popularity", "asc")}
-                      className={`w-full text-left px-4 py-2 hover:bg-gray-100
-                ${
-                  selectedSort.type === "popularity" &&
-                  selectedSort.order === "asc"
-                    ? "bg-[#FF6D33] text-white"
-                    : ""
-                }`}
-                    >
-                      Propscore: Low → High
-                    </button>
-                  </li>
-                </ul>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Active Filters:
+                </span>
+                {searchParams.get("apartments") && (
+                  <span className="inline-flex items-center gap-1 bg-orange-100 text-[#FF6D33] px-3 py-1 rounded-full text-xs font-medium">
+                    Apartments:{" "}
+                    {searchParams.get("apartments")?.replace(/\+/g, ", ")} BHK
+                  </span>
+                )}
+                {searchParams.get("villas") && (
+                  <span className="inline-flex items-center gap-1 bg-orange-100 text-[#FF6D33] px-3 py-1 rounded-full text-xs font-medium">
+                    Villas: {searchParams.get("villas")?.replace(/\+/g, ", ")}{" "}
+                    BHK
+                  </span>
+                )}
+                {searchParams.get("plotArea") && (
+                  <span className="inline-flex items-center gap-1 bg-orange-100 text-[#FF6D33] px-3 py-1 rounded-full text-xs font-medium">
+                    Plot: {searchParams.get("plotArea")}+ sq.ft
+                  </span>
+                )}
+                {isBudgetActive && (
+                  <span className="inline-flex items-center gap-1 bg-orange-100 text-[#FF6D33] px-3 py-1 rounded-full text-xs font-medium">
+                    Budget: {formatPrice(Number(currentMin))} -{" "}
+                    {formatPrice(Number(currentMax))}
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setShowMap((prev) => !prev)}
-            className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
-          >
-            {showMap ? "Close Map" : "Map View"}
-          </button>
+            </motion.div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -470,7 +825,7 @@ export default function PropertyView({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="mb-6 h-[500px] w-full"
+              className="mb-6 h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200"
             >
               <LazyMap allFilteredData={{ projects: properties }} />
             </motion.div>
@@ -481,31 +836,45 @@ export default function PropertyView({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="h-full"
+              className="min-h-screen"
             >
               <div className="mb-6">
                 {hasAnyFilter && (
                   <div className="space-y-2">
-                    <h2 className="text-2xl md:text-3xl font-bold text-black">
-                      {query ? (
-                        <>
-                          Showing results for{" "}
-                          <span className="text-[#FF6D33]">"{query}"</span>
-                        </>
-                      ) : (
-                        <>Showing filtered results</>
-                      )}
-                    </h2>
+                    {totalMatches > 0 ? (
+                      <>
+                        <h2 className="text-2xl md:text-3xl font-bold text-black">
+                          {query ? (
+                            <>
+                              Showing results for{" "}
+                              <span className="text-[#FF6D33]">"{query}"</span>
+                            </>
+                          ) : (
+                            <>Showing filtered results</>
+                          )}
+                        </h2>
 
-                    <p className="text-sm md:text-base text-gray-600">
-                      <span className="font-semibold text-black">
-                        {totalMatches.toLocaleString()}
-                      </span>{" "}
-                      properties found • currently viewing{" "}
-                      <span className="font-semibold text-black">
-                        {startRange}-{endRange}
-                      </span>
-                    </p>
+                        <p className="text-sm md:text-base text-gray-600">
+                          <span className="font-semibold text-black">
+                            {totalMatches.toLocaleString()}
+                          </span>{" "}
+                          properties found • currently viewing{" "}
+                          <span className="font-semibold text-black">
+                            {startRange}-{endRange}
+                          </span>
+                        </p>
+                      </>
+                    ) : (
+                      <div className="text-center py-10">
+                        <h2 className="text-2xl md:text-3xl font-bold text-gray-700">
+                          No results found{query ? ` for "${query}"` : ""}
+                        </h2>
+                        <p className="text-gray-500 mt-2">
+                          Try adjusting your search or filters to find what
+                          you're looking for.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
