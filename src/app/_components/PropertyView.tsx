@@ -13,16 +13,19 @@ import {
 import { MdApartment } from "react-icons/md";
 import { BiRupee } from "react-icons/bi";
 import { motion, AnimatePresence } from "framer-motion";
-
 import { useRouter, useSearchParams } from "next/navigation";
 import { PaginationComponent } from "./Pagination";
-
 import dynamic from "next/dynamic";
+import useSWR from "swr";
+import toast from "react-hot-toast";
 
 const LazyMap = dynamic(() => import("@/components/discovery-map"), {
   ssr: false,
   loading: () => <p>Loading...</p>,
 });
+
+const fetcher = (...args: Parameters<typeof fetch>) =>
+  fetch(...args).then((res) => res.json());
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -69,11 +72,6 @@ export default function PropertyView({
   query: string;
   currentPage: number;
 }) {
-  const [properties, setProperties] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalMatches, setTotalMatches] = useState(0);
-  const [currentPageNum, setCurrentPageNum] = useState(1);
-  const [totalPages, setTotalPages] = useState(0);
   const [openSort, setOpenSort] = useState(false);
   const [selectedSort, setSelectedSort] = useState({
     type: "popularity",
@@ -82,7 +80,6 @@ export default function PropertyView({
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const searchParamsString = searchParams.toString();
 
   const getParam = (key: keyof typeof DEFAULTS) => {
     return searchParams.get(key) ?? DEFAULTS[key];
@@ -127,6 +124,64 @@ export default function PropertyView({
     searchParams.get("micromarket") ||
     searchParams.get("name");
 
+
+  const buildApiUrl = () => {
+    const safeMin = getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value;
+    const safeMax =
+      getParam("maxBudget") ??
+      MAX_BUDGET_OPTIONS[MAX_BUDGET_OPTIONS.length - 1].value;
+
+    const safeSortType = getParam("sortType");
+    const safeSortOrder = getParam("sortOrder");
+    const safePossession = getParam("possession");
+
+    const apartmentsParam = searchParams.get("apartments");
+    const villasParam = searchParams.get("villas");
+    const plotAreaParam = searchParams.get("plotArea");
+
+    const queryParams = new URLSearchParams();
+    queryParams.set("query", query);
+    queryParams.set("page", currentPage.toString());
+    queryParams.set("minBudget", safeMin.toString());
+    queryParams.set("maxBudget", safeMax.toString());
+    queryParams.set("sortType", safeSortType);
+    queryParams.set("sortOrder", safeSortOrder);
+    queryParams.set("possession", safePossession);
+
+    if (apartmentsParam) queryParams.set("apartments", apartmentsParam);
+    if (villasParam) queryParams.set("villas", villasParam);
+    if (plotAreaParam) queryParams.set("plotArea", plotAreaParam);
+
+    return `${apiUrl}/api/properties?${queryParams.toString()}`;
+  };
+
+  const { data, error, isLoading } = useSWR(buildApiUrl(), fetcher, {
+    revalidateOnFocus: false,
+    onSuccess: (data) => {
+      if (data?.results && data.results.length > 0) {
+        toast.success(`Found ${data.totalMatches || 0} properties`);
+      }
+    },
+    onError: (error) => {
+      toast.error("Failed to load properties. Please try again.");
+      console.error("Error loading properties:", error);
+    },
+  });
+
+  const properties = data?.results || [];
+  const totalMatches = data?.totalMatches || 0;
+  const currentPageNum = data?.currentPage || 1;
+  const totalPages = data?.totalPages || 0;
+
+ 
+  useEffect(() => {
+    if (isLoading) {
+      toast.loading("Loading properties...", { id: "loading-properties" });
+    } else {
+      toast.dismiss("loading-properties");
+    }
+  }, [isLoading]);
+
   useEffect(() => {
     const apartments = searchParams.get("apartments");
     const villas = searchParams.get("villas");
@@ -148,67 +203,6 @@ export default function PropertyView({
       setPlotArea("");
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    let timeoutId: ReturnType<typeof setTimeout>;
-    async function load() {
-      setLoading(true);
-      const MIN_SHIMMER_TIME = 1000; // 1 second
-      let shimmerDone = false;
-      let dataDone = false;
-
-      timeoutId = setTimeout(() => {
-        shimmerDone = true;
-        if (dataDone) setLoading(false);
-      }, MIN_SHIMMER_TIME);
-      try {
-        const safeMin = getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value;
-        const safeMax =
-          getParam("maxBudget") ??
-          MAX_BUDGET_OPTIONS[MAX_BUDGET_OPTIONS.length - 1].value;
-
-        const safeSortType = getParam("sortType");
-        const safeSortOrder = getParam("sortOrder");
-        const safePossession = getParam("possession");
-
-        const apartmentsParam = searchParams.get("apartments");
-        const villasParam = searchParams.get("villas");
-        const plotAreaParam = searchParams.get("plotArea");
-
-        const queryParams = new URLSearchParams();
-        queryParams.set("query", query);
-        queryParams.set("page", currentPage.toString());
-        queryParams.set("minBudget", safeMin.toString());
-        queryParams.set("maxBudget", safeMax.toString());
-        queryParams.set("sortType", safeSortType);
-        queryParams.set("sortOrder", safeSortOrder);
-        queryParams.set("possession", safePossession);
-
-        if (apartmentsParam) queryParams.set("apartments", apartmentsParam);
-        if (villasParam) queryParams.set("villas", villasParam);
-        if (plotAreaParam) queryParams.set("plotArea", plotAreaParam);
-
-        const url = `${apiUrl}/api/properties?${queryParams.toString()}`;
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        setProperties(data.results);
-        setTotalMatches(data.totalMatches || 0);
-        setCurrentPageNum(data.currentPage || 1);
-        setTotalPages(data.totalPages || 0);
-      } catch (err) {
-        console.error("Error loading properties:", err);
-      } finally {
-        dataDone = true;
-        if (shimmerDone) setLoading(false);
-      }
-    }
-
-    load();
-
-    return () => clearTimeout(timeoutId);
-  }, [currentPage, searchParamsString]);
 
   const updateParamsBatch = (entries: Record<string, string>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -377,7 +371,6 @@ export default function PropertyView({
     (currentPageNum - 1) * propertiesPerPage + propertiesPerPage,
     totalMatches
   );
-
   return (
     <div className="flex-1 overflow-none px-4 md:px-6 lg:px-8 py-2 sm:py-4 md:py-6">
       <div className="max-w-7xl mx-auto w-full overflow-x-hidden">
@@ -539,7 +532,7 @@ export default function PropertyView({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setOpenBudget(!openBudget)}
-                className={`group flex items-center gap-2 px-3 py-3 rounded-lg border-2 text-xs font-medium transition-all duration-300 shadow-sm ${
+                className={`group flex items-center gap-2 px-3 py-[9.5px] rounded-lg border-2 font-medium transition-all duration-300 shadow-sm ${
                   isBudgetActive
                     ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
                     : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:text-[#FF6D33] hover:shadow-md"
@@ -550,7 +543,7 @@ export default function PropertyView({
                 />
                 <span className="text-sm">Budget</span>
                 {isBudgetActive && (
-                  <span className="bg-white text-[#FF6D33] text-[10px] font-bold px-1.0 py-0.5 rounded-full">
+                  <span className="bg-white text-[#FF6D33] text-[13px] w-14 flex justify-center items-center font-bold px-1.0 py-0.5 rounded-full">
                     Active
                   </span>
                 )}
@@ -804,7 +797,7 @@ export default function PropertyView({
           )}
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6">
             <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3, 4, 5, 6].map((i) => (
@@ -893,7 +886,7 @@ export default function PropertyView({
                   transition={{ duration: 0.3, delay: 0.1 }}
                   className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
                 >
-                  {properties.map((property, index) => (
+                  {properties.map((property: any, index: number) => (
                     <motion.div
                       key={property.id}
                       initial={{ opacity: 0, y: 20 }}
