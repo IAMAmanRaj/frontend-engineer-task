@@ -9,8 +9,18 @@ import {
   FaStar,
 } from "react-icons/fa";
 import { MdApartment } from "react-icons/md";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { useRouter, useSearchParams } from "next/navigation";
+import { PaginationComponent } from "./Pagination";
+
+import dynamic from 'next/dynamic';
+
+const LazyMap = dynamic(() => import("@/components/discovery-map"), {
+   ssr: false,
+  loading: () => <p>Loading...</p>,
+});
+
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -42,7 +52,7 @@ const MAX_BUDGET_OPTIONS = [
   { label: "10 Cr+", value: 500000000 },
 ];
 
-export default function PropertyList({
+export default function PropertyView({
   query,
   currentPage,
 }: {
@@ -69,6 +79,7 @@ export default function PropertyList({
   };
 
   const [openBudget, setOpenBudget] = useState(false);
+  const [showMap, setShowMap] = useState(false);
 
   const [selectedMin, setSelectedMin] = useState(
     Number(getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value)
@@ -153,7 +164,6 @@ export default function PropertyList({
   const handleBudgetChange = (min: number, max: number) => {
     const currentMin = getParam("minBudget");
     const currentMax = getParam("maxBudget");
-
 
     if (
       currentMin === selectedMin.toString() &&
@@ -253,9 +263,9 @@ export default function PropertyList({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex gap-3 mb-6 flex-wrap">
+    <div className="flex-1  overflow-none px-4 md:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto w-full overflow-x-hidden">
+        <div className="flex gap-3 mb-6 flex-wrap relative z-30">
           <div className="relative inline-block text-left">
             <button
               onClick={() => setOpenBudget(!openBudget)}
@@ -266,7 +276,6 @@ export default function PropertyList({
 
             {openBudget && (
               <div className="absolute mt-2 w-64 rounded-xl shadow-lg bg-white border border-gray-200 p-4 z-20">
-              
                 <h4 className="font-semibold text-sm mb-2">Minimum Budget</h4>
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {MIN_BUDGET_OPTIONS.map((item) => (
@@ -292,7 +301,6 @@ export default function PropertyList({
                   ))}
                 </div>
 
-               
                 <h4 className="font-semibold text-sm mb-2">Maximum Budget</h4>
                 <div className="grid grid-cols-2 gap-2 mb-3 max-h-40 overflow-y-auto">
                   {MAX_BUDGET_OPTIONS.filter((x) => x.value >= selectedMin).map(
@@ -314,11 +322,10 @@ export default function PropertyList({
                   )}
                 </div>
 
-        
                 <div className="flex justify-between mt-4">
                   <button
                     onClick={handleClearBudget}
-                    disabled={isBudgetDefault} // disable if already default
+                    disabled={isBudgetDefault}
                     className={`px-3 py-2 text-sm rounded-lg ${
                       isBudgetDefault
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed"
@@ -330,7 +337,7 @@ export default function PropertyList({
 
                   <button
                     onClick={() => handleBudgetChange(selectedMin, selectedMax)}
-                    disabled={!isBudgetChanged} // disable if nothing changed
+                    disabled={!isBudgetChanged}
                     className={`px-4 py-2 text-sm rounded-lg ${
                       isBudgetChanged
                         ? "bg-[#FF6D33] text-white hover:bg-black"
@@ -355,7 +362,6 @@ export default function PropertyList({
             {openSort && (
               <div className="absolute mt-2 w-52 rounded-xl shadow-lg bg-white border border-gray-200 z-20">
                 <ul className="py-2 text-sm text-gray-700">
-             
                   <li>
                     <button
                       onClick={() => handleSortSelect("price", "desc")}
@@ -370,7 +376,6 @@ export default function PropertyList({
                     </button>
                   </li>
 
-          
                   <li>
                     <button
                       onClick={() => handleSortSelect("price", "asc")}
@@ -385,7 +390,6 @@ export default function PropertyList({
                     </button>
                   </li>
 
-            
                   <li>
                     <button
                       onClick={() => handleSortSelect("possession", "desc")}
@@ -416,7 +420,6 @@ export default function PropertyList({
                     </button>
                   </li>
 
-                
                   <li>
                     <button
                       onClick={() => handleSortSelect("popularity", "desc")}
@@ -432,7 +435,6 @@ export default function PropertyList({
                     </button>
                   </li>
 
-                 
                   <li>
                     <button
                       onClick={() => handleSortSelect("popularity", "asc")}
@@ -451,128 +453,180 @@ export default function PropertyList({
               </div>
             )}
           </div>
+
+          <button
+            onClick={() => setShowMap((prev) => !prev)}
+            className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
+          >
+            {showMap ? "Close Map" : "Map View"}
+          </button>
         </div>
 
-        <div className="mb-6">
-          {hasAnyFilter && (
-            <div className="space-y-2">
-              <h2 className="text-2xl md:text-3xl font-bold text-black">
-                {query ? (
-                  <>
-                    Showing results for{" "}
-                    <span className="text-[#FF6D33]">"{query}"</span>
-                  </>
-                ) : (
-                  <>Showing filtered results</>
-                )}
-              </h2>
-
-              <p className="text-sm md:text-base text-gray-600">
-                <span className="font-semibold text-black">
-                  {totalMatches.toLocaleString()}
-                </span>{" "}
-                properties found • currently viewing{" "}
-                <span className="font-semibold text-black">
-                  {startRange}-{endRange}
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6">
-          {properties.map((property) => (
-            <div
-              key={property.id}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-[#FF6D33] transition-all duration-300 cursor-pointer group"
+        <AnimatePresence mode="wait">
+          {showMap ? (
+            <motion.div
+              key="map-view"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.5, ease: "easeInOut" }}
+              className="mb-6 h-[500px] w-full"
             >
-              <div className="relative h-48 md:h-56 overflow-hidden bg-gray-100">
-                <Image
-                  src={property.image}
-                  alt={property.alt || property.name}
-                  fill
-                  className="object-cover group-hover:scale-110 transition-transform duration-500"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                />
+              <LazyMap allFilteredData={{ projects: properties }} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="list-view"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="h-full"
+            >
+              <div className="mb-6">
+                {hasAnyFilter && (
+                  <div className="space-y-2">
+                    <h2 className="text-2xl md:text-3xl font-bold text-black">
+                      {query ? (
+                        <>
+                          Showing results for{" "}
+                          <span className="text-[#FF6D33]">"{query}"</span>
+                        </>
+                      ) : (
+                        <>Showing filtered results</>
+                      )}
+                    </h2>
 
-                <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg">
-                  <FaStar className="text-[#FF6D33] text-xs" />
-                  <span className="text-sm font-bold text-black">
-                    {property.propscore.toFixed(1)}
-                  </span>
-                </div>
-
-                <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5">
-                  <span className="text-xs font-medium text-white">
-                    {property.type}
-                  </span>
-                </div>
+                    <p className="text-sm md:text-base text-gray-600">
+                      <span className="font-semibold text-black">
+                        {totalMatches.toLocaleString()}
+                      </span>{" "}
+                      properties found • currently viewing{" "}
+                      <span className="font-semibold text-black">
+                        {startRange}-{endRange}
+                      </span>
+                    </p>
+                  </div>
+                )}
               </div>
 
-              <div className="p-4 md:p-5 space-y-3">
-                <div>
-                  <h3 className="text-lg md:text-xl font-bold text-black group-hover:text-[#FF6D33] transition-colors line-clamp-1">
-                    {property.name}
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    by{" "}
-                    <span className="font-medium text-black">
-                      {property.developerName}
-                    </span>
-                  </p>
-                </div>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
+              >
+                {properties.map((property, index) => (
+                  <motion.div
+                    key={property.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-[#FF6D33] transition-all duration-300 cursor-pointer group"
+                  >
+                    <div className="relative h-48 md:h-56 overflow-hidden bg-gray-100">
+                      <Image
+                        src={property.image}
+                        alt={property.alt || property.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform duration-500"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      />
 
-                <div className="flex items-start gap-2">
-                  <FaMapMarkerAlt className="text-[#FF6D33] text-sm mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-700">
-                    {property.micromarket}, {property.city}
-                  </span>
-                </div>
+                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg">
+                        <FaStar className="text-[#FF6D33] text-xs" />
+                        <span className="text-sm font-bold text-black">
+                          {property.propscore.toFixed(1)}
+                        </span>
+                      </div>
 
-                <div className="flex items-center gap-2 flex-wrap">
-                  <MdApartment className="text-gray-600 text-base flex-shrink-0" />
-                  {property.typologies.map((type: string, idx: number) => (
-                    <span
-                      key={idx}
-                      className="text-xs font-medium bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                </div>
-
-                <div className="pt-2 border-t border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500 font-medium">
-                      Price Range
-                    </span>
-                    <div className="text-right">
-                      <p className="text-sm md:text-base font-bold text-black">
-                        {formatPrice(property.minPrice)} -{" "}
-                        {formatPrice(property.maxPrice)}
-                      </p>
+                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5">
+                        <span className="text-xs font-medium text-white">
+                          {property.type}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="flex items-center gap-2">
-                  <FaRulerCombined className="text-gray-600 text-sm flex-shrink-0" />
-                  <div className="flex-1">
-                    <span className="text-xs text-gray-500">Area: </span>
-                    <span className="text-sm font-semibold text-black">
-                      {formatArea(property.minSaleableArea)} -{" "}
-                      {formatArea(property.maxSaleableArea)}
-                    </span>
-                  </div>
-                </div>
+                    <div className="p-4 md:p-5 space-y-3">
+                      <div>
+                        <h3 className="text-lg md:text-xl font-bold text-black group-hover:text-[#FF6D33] transition-colors line-clamp-1">
+                          {property.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-1">
+                          by{" "}
+                          <span className="font-medium text-black">
+                            {property.developerName}
+                          </span>
+                        </p>
+                      </div>
 
-                <button className="w-full mt-3 bg-[#FF6D33] hover:bg-black text-white font-medium py-2.5 rounded-full transition-all duration-300 text-sm md:text-base">
-                  View Details
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+                      <div className="flex items-start gap-2">
+                        <FaMapMarkerAlt className="text-[#FF6D33] text-sm mt-0.5 flex-shrink-0" />
+                        <span className="text-sm text-gray-700">
+                          {property.micromarket}, {property.city}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <MdApartment className="text-gray-600 text-base flex-shrink-0" />
+                        {property.typologies.map(
+                          (type: string, idx: number) => (
+                            <span
+                              key={idx}
+                              className="text-xs font-medium bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full"
+                            >
+                              {type}
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-100">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-gray-500 font-medium">
+                            Price Range
+                          </span>
+                          <div className="text-right">
+                            <p className="text-sm md:text-base font-bold text-black">
+                              {formatPrice(property.minPrice)} -{" "}
+                              {formatPrice(property.maxPrice)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <FaRulerCombined className="text-gray-600 text-sm flex-shrink-0" />
+                        <div className="flex-1">
+                          <span className="text-xs text-gray-500">Area: </span>
+                          <span className="text-sm font-semibold text-black">
+                            {formatArea(property.minSaleableArea)} -{" "}
+                            {formatArea(property.maxSaleableArea)}
+                          </span>
+                        </div>
+                      </div>
+
+                      <button className="w-full mt-3 bg-[#FF6D33] hover:bg-black text-white font-medium py-2.5 rounded-full transition-all duration-300 text-sm md:text-base">
+                        View Details
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {totalPages > 1 && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                  className="mt-6"
+                >
+                  <PaginationComponent pageCount={totalPages} />
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

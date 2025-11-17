@@ -33,7 +33,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
     }
 
     if (currentPage - delta > 2) {
-      rangeWithDots.push(1, '...');
+      rangeWithDots.push(1, "...");
     } else {
       rangeWithDots.push(1);
     }
@@ -41,7 +41,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
     rangeWithDots.push(...range);
 
     if (currentPage + delta < pageCount - 1) {
-      rangeWithDots.push('...', pageCount);
+      rangeWithDots.push("...", pageCount);
     } else if (pageCount > 1) {
       rangeWithDots.push(pageCount);
     }
@@ -49,16 +49,16 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
     return rangeWithDots;
   };
 
-  const pages = pageCount <= 7 
-    ? Array.from({ length: pageCount }, (_, i) => i + 1)
-    : getPageNumbers();
+  const pages =
+    pageCount <= 7
+      ? Array.from({ length: pageCount }, (_, i) => i + 1)
+      : getPageNumbers();
 
   if (pageCount <= 1) return null;
 
   return (
     <div className="bg-white border-t border-gray-100 px-4 md:px-6 lg:px-8 py-4">
       <div className="flex flex-wrap items-center justify-center gap-2">
-   
         <button
           onClick={() =>
             currentPage > 1 && router.push(createPageURL(currentPage - 1))
@@ -66,8 +66,18 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
           disabled={currentPage <= 1}
           className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] disabled:hover:border-gray-200 disabled:hover:text-black"
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           <span className="hidden sm:inline">Previous</span>
         </button>
@@ -75,7 +85,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
         <div className="flex items-center gap-1 md:gap-2">
           {pages.map((page, idx) => (
             <div key={idx}>
-              {page === '...' ? (
+              {page === "..." ? (
                 <span className="px-2 py-2 text-gray-400">...</span>
               ) : (
                 <button
@@ -85,7 +95,11 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
                       ? "bg-[#FF6D33] text-white shadow-lg scale-110"
                       : "bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] hover:scale-105"
                   }`}
-                  style={page === currentPage ? { boxShadow: '0 10px 25px rgba(255, 109, 51, 0.3)' } : {}}
+                  style={
+                    page === currentPage
+                      ? { boxShadow: "0 10px 25px rgba(255, 109, 51, 0.3)" }
+                      : {}
+                  }
                 >
                   {page}
                 </button>
@@ -103,8 +117,18 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
           className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#FF6D33] text-white hover:bg-black disabled:hover:bg-[#FF6D33]"
         >
           <span className="hidden sm:inline">Next</span>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
           </svg>
         </button>
       </div>

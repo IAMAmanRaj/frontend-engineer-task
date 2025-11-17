@@ -1,10 +1,6 @@
-import { PropertyListing } from "@/data/property-listing";
-import MapCaller from "@/components/MapCaller";
 import Search from "./_components/Search";
 
-import PropertyList from "./_components/PropertyList";
-import { PaginationComponent } from "./_components/Pagination";
-import { getTotalPages } from "./db/actions";
+import PropertyView from "./_components/PropertyView";
 
 //TODO : Add meta data for this page
 // Page should serve via SSR
@@ -32,18 +28,6 @@ export default async function Page(props: {
 }) {
   const params = await props.searchParams;
 
-  const DEFAULTS = {
-    minBudget: "5000000",
-    maxBudget: "30000000",
-    sortType: "popularity",
-    sortOrder: "desc",
-    possession: "any",
-    page: "1",
-  };
-
-  const getParam = (key: keyof typeof DEFAULTS) =>
-    params?.[key] ?? DEFAULTS[key];
-
   const query =
     params?.search ||
     params?.name ||
@@ -53,24 +37,13 @@ export default async function Page(props: {
 
   const currentPageValue = Number(params?.page || 1);
 
-  const filters = {
-    minBudget: Number(getParam("minBudget")),
-    maxBudget: Number(getParam("maxBudget")),
-  };
-
-  const totalPages = await getTotalPages(query, filters);
-
   return (
-    <div className="w-screen h-screen flex flex-col bg-white pt-5">
+    <div className="w-full max-w-full min-h-screen flex flex-col bg-white pt-5 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className="flex flex-row">
         <Search placeholder="Search for Developers, Locations, or Projects" />
       </div>
 
-      <PropertyList query={query} currentPage={currentPageValue} />
-
-      <PaginationComponent pageCount={totalPages} />
-
-      {/* <MapCaller allFilteredData={PropertyListing} /> */}
+      <PropertyView query={query} currentPage={currentPageValue} />
     </div>
   );
 }
