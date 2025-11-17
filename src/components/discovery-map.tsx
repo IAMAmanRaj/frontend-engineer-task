@@ -3,7 +3,11 @@
 // TODO:  When zooming out, property nodes overlap and become cluttered.
 // Improve visual spacing for a better UI/UX.
 
+//POST FIX : I used react-leaflet-markercluster package to cluster the markers when they are too close to each other. This improves the visual spacing and reduces clutter on the map when zoomed out.
+
 import "leaflet/dist/leaflet.css";
+import MarkerClusterGroup from "react-leaflet-markercluster";
+import "react-leaflet-markercluster/styles";
 
 // TODO : This import gives "window is not defined" error in the terminal. Fix it.
 // POST FIX : use next/dynamic in a client side component that takes the incoming data from server as prop and passes it to child -> discovery-map.tsx component. This ensures, the discover-map.tsx component renders on client side in the browser and the window object by that time is accessible to the dependency.
@@ -41,7 +45,6 @@ import L, { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import { Location, projectListing } from "@/types/types";
 import { Badge } from "./badge";
 import { renderToString } from "react-dom/server";
-
 
 export const renderIcon = (
   icon: JSX.Element,
@@ -157,30 +160,35 @@ export default function DiscoveryMap({
           <MapClickHandler onClick={() => setSelectedLocation(null)} />
           <MapController selectedLocation={selectedLocation} />
 
-          {/* Project Location Marker */}
+  
 
-          {allFilteredData && allFilteredData.projects.length > 0
-            ? allFilteredData.projects.map((project: projectListing) => (
-                <Marker
-                  eventHandlers={{
-                    click: () => {
-                      setSelectedProperty(project);
-                      setSelectedLocation({
-                        name: project.name,
-                        lat: project.latitude,
-                        lon: project.longitude,
-                      });
-                    },
-                  }}
-                  position={[project.latitude, project.longitude]}
-                  key={project.id}
-                  icon={getOtherLocationIcon(
-                    project.name,
-                    selectedProperty?.id == project.id
-                  )}
-                />
-              ))
-            : null}
+          <MarkerClusterGroup
+            showCoverageOnHover={false}
+            spiderfyOnMaxZoom={true}
+          >
+            {allFilteredData && allFilteredData.projects.length > 0
+              ? allFilteredData.projects.map((project: projectListing) => (
+                  <Marker
+                    eventHandlers={{
+                      click: () => {
+                        setSelectedProperty(project);
+                        setSelectedLocation({
+                          name: project.name,
+                          lat: project.latitude,
+                          lon: project.longitude,
+                        });
+                      },
+                    }}
+                    position={[project.latitude, project.longitude]}
+                    key={project.id}
+                    icon={getOtherLocationIcon(
+                      project.name,
+                      selectedProperty?.id == project.id
+                    )}
+                  />
+                ))
+              : null}
+          </MarkerClusterGroup>
           {selectedLocation && selectedProperty && (
             <Popup
               position={[selectedLocation.lat, selectedLocation.lon]}
