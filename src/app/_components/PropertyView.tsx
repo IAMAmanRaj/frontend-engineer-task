@@ -18,6 +18,13 @@ import { PaginationComponent } from "./Pagination";
 import dynamic from "next/dynamic";
 import useSWR from "swr";
 import toast from "react-hot-toast";
+import {
+  DEFAULTS,
+  MIN_BUDGET_OPTIONS,
+  MAX_BUDGET_OPTIONS,
+  BHK_OPTIONS,
+} from "../constants";
+import { formatPrice, formatArea } from "@/utils/helpers";
 
 const LazyMap = dynamic(() => import("@/components/discovery-map"), {
   ssr: false,
@@ -28,42 +35,6 @@ const fetcher = (...args: Parameters<typeof fetch>) =>
   fetch(...args).then((res) => res.json());
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-
-const DEFAULTS = {
-  minBudget: "5000000",
-  maxBudget: "30000000",
-  sortType: "popularity",
-  sortOrder: "desc",
-  possession: "any",
-};
-
-const MIN_BUDGET_OPTIONS = [
-  { label: "50L", value: 5000000 },
-  { label: "75L", value: 7500000 },
-  { label: "1 Cr", value: 10000000 },
-  { label: "1.5 Cr", value: 15000000 },
-  { label: "2 Cr", value: 20000000 },
-  { label: "2.5 Cr", value: 25000000 },
-  { label: "3 Cr", value: 30000000 },
-];
-
-const MAX_BUDGET_OPTIONS = [
-  { label: "3 Cr", value: 30000000 },
-  { label: "3.5 Cr", value: 35000000 },
-  { label: "4 Cr", value: 40000000 },
-  { label: "4.5 Cr", value: 45000000 },
-  { label: "5 Cr", value: 50000000 },
-  { label: "10 Cr", value: 100000000 },
-  { label: "10 Cr+", value: 500000000 },
-];
-
-const BHK_OPTIONS = [
-  { label: "1 BHK", value: 1 },
-  { label: "2 BHK", value: 2 },
-  { label: "3 BHK", value: 3 },
-  { label: "4 BHK", value: 4 },
-  { label: "5 BHK", value: 5 },
-];
 
 export default function PropertyView({
   query,
@@ -124,7 +95,6 @@ export default function PropertyView({
     searchParams.get("micromarket") ||
     searchParams.get("name");
 
-
   const buildApiUrl = () => {
     const safeMin = getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value;
     const safeMax =
@@ -173,7 +143,6 @@ export default function PropertyView({
   const currentPageNum = data?.currentPage || 1;
   const totalPages = data?.totalPages || 0;
 
- 
   useEffect(() => {
     if (isLoading) {
       toast.loading("Loading properties...", { id: "loading-properties" });
@@ -349,19 +318,6 @@ export default function PropertyView({
       sortType: type,
       sortOrder: order,
     });
-  };
-
-  const formatPrice = (price: number) => {
-    if (price >= 10000000) {
-      return `₹${(price / 10000000).toFixed(2)} Cr`;
-    } else if (price >= 100000) {
-      return `₹${(price / 100000).toFixed(2)} L`;
-    }
-    return `₹${price.toLocaleString()}`;
-  };
-
-  const formatArea = (area: number) => {
-    return `${area.toLocaleString()} sq.ft`;
   };
 
   const propertiesPerPage = properties.length;

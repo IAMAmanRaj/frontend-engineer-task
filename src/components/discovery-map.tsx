@@ -34,7 +34,7 @@ import {
   cn,
   concatenateTypologies,
   formatDate,
-  formatPrice,
+  formatPriceDefault,
   para,
 } from "@/utils/helpers";
 import { BudgetIcon } from "@/assets/budget-icon";
@@ -260,8 +260,8 @@ export default function DiscoveryMap({
                         )}
                       >
                         <BudgetIcon width={20} height={20} />
-                        {formatPrice(selectedProperty.minPrice, false)} -{" "}
-                        {formatPrice(selectedProperty.maxPrice, false)}
+                        {formatPriceDefault(selectedProperty.minPrice, false)} -{" "}
+                        {formatPriceDefault(selectedProperty.maxPrice, false)}
                       </span>
                       <span
                         className={cn(

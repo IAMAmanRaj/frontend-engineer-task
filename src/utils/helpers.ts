@@ -22,7 +22,21 @@ export const formatDate = (
   return new Intl.DateTimeFormat(locale, options).format(date)
 }
 
-export const formatPrice = (amount: number, fullFormat: boolean): string => {
+  export const formatPrice = (price: number) => {
+    if (price >= 10000000) {
+      return `₹${(price / 10000000).toFixed(2)} Cr`;
+    } else if (price >= 100000) {
+      return `₹${(price / 100000).toFixed(2)} L`;
+    }
+    return `₹${price.toLocaleString()}`;
+  };
+
+  export const formatArea = (area: number) => {
+    return `${area.toLocaleString()} sq.ft`;
+  };
+
+
+export const formatPriceDefault = (amount: number, fullFormat: boolean): string => {
   if (amount === 0) return "0"
 
   if (amount >= 10000000) {
