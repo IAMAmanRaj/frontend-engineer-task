@@ -899,7 +899,7 @@ export default function PropertyView({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group ${
+                      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-2xl transition-all duration-300  group ${
                         property.propscore > 4
                           ? "border-[#FF6D33] bg-gradient-to-br from-white via-white to-orange-50/30 hover:border-[#FF6D33]"
                           : "border-gray-200 hover:border-[#FF6D33]"
@@ -1005,7 +1005,7 @@ export default function PropertyView({
                           </div>
                         </div>
 
-                        <button className="w-full mt-4 bg-[#FF6D33] hover:bg-black text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm shadow-sm hover:shadow-md">
+                        <button className="w-full hover:cursor-pointer mt-4 bg-[#FF6D33] hover:bg-black text-white font-semibold py-3 rounded-lg transition-all duration-600 text-sm shadow-sm hover:shadow-md">
                           View Details
                         </button>
                       </div>

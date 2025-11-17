@@ -57,7 +57,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
   if (pageCount <= 1) return null;
 
   return (
-    <div className="bg-white border-t border-gray-100 px-4 md:px-6 lg:px-8 py-4">
+    <div className="bg-white/70 backdrop-blur-[10px] border-t border-gray-100 px-4 md:px-6 lg:px-8 py-4">
       <div className="flex flex-wrap items-center justify-center gap-2">
         <button
           onClick={() =>
