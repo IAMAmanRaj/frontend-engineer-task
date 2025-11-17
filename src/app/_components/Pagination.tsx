@@ -90,7 +90,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
               ) : (
                 <button
                   onClick={() => router.push(createPageURL(page as number))}
-                  className={`min-w-[40px] h-10 px-3 rounded-full font-medium transition-all duration-200 ${
+                  className={`min-w-[25px] sm:min-w-[40px] h-[25px] sm:h-10 px-3 rounded-full font-medium transition-all duration-200 ${
                     page === currentPage
                       ? "bg-[#FF6D33] text-white shadow-lg scale-110"
                       : "bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] hover:scale-105"

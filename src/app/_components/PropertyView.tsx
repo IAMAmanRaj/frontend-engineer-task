@@ -393,7 +393,7 @@ export default function PropertyView({
     <div className="flex-1 overflow-none px-4 md:px-6 lg:px-8 py-6">
       <div className="max-w-7xl mx-auto w-full overflow-x-hidden">
         <div className="bg-gradient-to-r from-gray-50 to-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex relative justify-center sm:justify-start flex-wrap items-center gap-4">
             <div className="relative">
               <motion.button
                 whileHover={{ scale: 1.02 }}
@@ -550,20 +550,18 @@ export default function PropertyView({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setOpenBudget(!openBudget)}
-                className={`group flex items-center gap-2 px-3 py-2 rounded-lg border-2 text-xs font-medium transition-all duration-300 shadow-sm ${
+                className={`group flex items-center gap-2 px-3 py-3 rounded-lg border-2 text-xs font-medium transition-all duration-300 shadow-sm ${
                   isBudgetActive
                     ? "bg-[#FF6D33] text-white border-[#FF6D33] shadow-lg shadow-orange-200"
                     : "bg-white border-gray-200 text-gray-700 hover:border-[#FF6D33] hover:text-[#FF6D33] hover:shadow-md"
                 }`}
               >
                 <BiRupee
-                  className={`text-lg transition-transform duration-300 ${
-                    openBudget ? "rotate-12" : ""
-                  }`}
+                  className={`text-xl -mr-1  transition-transform duration-300`}
                 />
-                <span>Budget</span>
+                <span className="text-sm">Budget</span>
                 {isBudgetActive && (
-                  <span className="bg-white text-[#FF6D33] text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                  <span className="bg-white text-[#FF6D33] text-[10px] font-bold px-1.0 py-0.5 rounded-full">
                     Active
                   </span>
                 )}
@@ -742,7 +740,7 @@ export default function PropertyView({
               </AnimatePresence>
             </div>
 
-            <div className="ml-auto">
+            <div className="mx-auto sm:absolute right-0">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -764,7 +762,7 @@ export default function PropertyView({
                     showMap ? "rotate-12 scale-110" : ""
                   }`}
                 />
-                <span className="z-10">
+                <span className="z-10 ">
                   {showMap ? "Close Map" : "Map View"}
                 </span>
 
@@ -836,7 +834,7 @@ export default function PropertyView({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="min-h-screen"
+              className="min-h-screen pb-24"
             >
               <div className="mb-6">
                 {hasAnyFilter && (
@@ -988,7 +986,7 @@ export default function PropertyView({
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3, delay: 0.2 }}
-                  className="mt-6"
+                  className="mt-6 fixed w-full bottom-0 left-1/2 -translate-x-1/2"
                 >
                   <PaginationComponent pageCount={totalPages} />
                 </motion.div>

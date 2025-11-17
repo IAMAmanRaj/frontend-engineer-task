@@ -3,7 +3,9 @@ import { useState, useRef, useEffect } from "react";
 import { FaMagnifyingGlass } from "react-icons/fa6";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
-import { minify } from "next/dist/build/swc/generated-native";
+import { FaMapMarkerAlt as LocationIcon } from "react-icons/fa";
+import { FaTools as ToolIcon } from "react-icons/fa";
+import { FaUserTie as DeveloperIcon } from "react-icons/fa";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -69,8 +71,8 @@ export default function Search({ placeholder }: { placeholder: string }) {
     const params = new URLSearchParams(searchParams);
 
     const DEFAULTS = {
-      minBudget : "5000000",
-      maxBudget : "30000000",
+      minBudget: "5000000",
+      maxBudget: "30000000",
       sortType: "popularity",
       sortOrder: "desc",
       possession: "any",
@@ -177,7 +179,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
       onMouseLeave={() => {
         setSuggestions([]);
       }}
-      className="relative w-full px-4 pb-8 md:px-6 lg:px-8"
+      className="relative w-full px-4 md:px-6 lg:px-8"
     >
       <div className="relative flex items-center max-w-3xl mx-auto">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
@@ -194,14 +196,14 @@ export default function Search({ placeholder }: { placeholder: string }) {
         />
 
         {suggestions.length > 0 && (
-          <div className="absolute left-0 top-full mt-2 w-full bg-white shadow-lg rounded-2xl border border-gray-100 overflow-hidden z-50 max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="absolute left-0 top-full mt-2 w-full bg-white [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] shadow-lg rounded-2xl border border-gray-300 overflow-hidden z-50 max-h-80 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
             {suggestions.map((s: any, i: number) => (
               <button
                 key={i}
                 ref={(el) => {
                   suggestionRefs.current[i] = el;
                 }}
-                className={`w-full text-left px-4 py-3 transition-colors duration-150 flex items-center justify-between group border-b border-gray-50 last:border-b-0 ${
+                className={`w-full hover:cursor-pointer text-left px-4 py-3 transition-all duration-150 flex items-center justify-between group border-b border-gray-50 last:border-b-0 ${
                   selectedIndex === i
                     ? "bg-[#FF6D33] text-white"
                     : "hover:bg-gray-50 text-black"
@@ -222,13 +224,33 @@ export default function Search({ placeholder }: { placeholder: string }) {
                   {s.label}
                 </span>
                 <span
-                  className={`text-xs px-2 py-1 rounded-full ${
+                  className={`flex items-center gap-1 text-[15px] px-2 py-1 rounded-full ${
                     selectedIndex === i
                       ? "bg-white/20 text-white"
                       : "bg-gray-100 text-gray-400"
                   }`}
                 >
-                  {s.type}
+                  {/* Icon based on type */}
+                  {s.type === "developerName" && (
+                    <>
+                      <DeveloperIcon className="inline-block text-[17px]" />
+                      <span className="capitalize">Developer</span>
+                    </>
+                  )}
+                  {s.type === "micromarket" && (
+                    <>
+                      <LocationIcon className="inline-block text-[17px]" />
+                      <span className="capitalize">Location</span>
+                    </>
+                  )}
+                  {s.type === "name" && (
+                    <>
+                      <ToolIcon className="inline-block text-[17px]" />
+                      <span className="capitalize">Project</span>
+                    </>
+                  )}
+
+                  {/* Display type text */}
                 </span>
               </button>
             ))}
