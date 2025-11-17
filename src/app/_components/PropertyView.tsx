@@ -150,8 +150,17 @@ export default function PropertyView({
   }, [searchParams]);
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
     async function load() {
       setLoading(true);
+      const MIN_SHIMMER_TIME = 1000; // 1 second
+      let shimmerDone = false;
+      let dataDone = false;
+
+      timeoutId = setTimeout(() => {
+        shimmerDone = true;
+        if (dataDone) setLoading(false);
+      }, MIN_SHIMMER_TIME);
       try {
         const safeMin = getParam("minBudget") ?? MIN_BUDGET_OPTIONS[0].value;
         const safeMax =
@@ -191,11 +200,14 @@ export default function PropertyView({
       } catch (err) {
         console.error("Error loading properties:", err);
       } finally {
-        setLoading(false);
+        dataDone = true;
+        if (shimmerDone) setLoading(false);
       }
     }
 
     load();
+
+    return () => clearTimeout(timeoutId);
   }, [currentPage, searchParamsString]);
 
   const updateParamsBatch = (entries: Record<string, string>) => {
@@ -365,28 +377,6 @@ export default function PropertyView({
     (currentPageNum - 1) * propertiesPerPage + propertiesPerPage,
     totalMatches
   );
-
-  if (loading) {
-    return (
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse"
-            >
-              <div className="bg-gray-200 h-48 w-full" />
-              <div className="p-4 space-y-3">
-                <div className="h-6 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-                <div className="h-4 bg-gray-200 rounded w-full" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 overflow-none px-4 md:px-6 lg:px-8 py-6">
@@ -814,208 +804,229 @@ export default function PropertyView({
           )}
         </div>
 
-        <AnimatePresence mode="wait">
-          {showMap ? (
-            <motion.div
-              key="map-view"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.5, ease: "easeInOut" }}
-              className="mb-6 h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200"
-            >
-              <LazyMap allFilteredData={{ projects: properties }} />
-            </motion.div>
-          ) : (
-            <motion.div
-              key="list-view"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
-              className="min-h-screen pb-24"
-            >
-              <div className="mb-6">
-                {hasAnyFilter && (
-                  <div className="space-y-2">
-                    {totalMatches > 0 ? (
-                      <>
-                        <h2 className="text-2xl md:text-3xl font-bold text-black">
-                          {query ? (
-                            <>
-                              Showing results for{" "}
-                              <span className="text-[#FF6D33]">"{query}"</span>
-                            </>
-                          ) : (
-                            <>Showing filtered results</>
-                          )}
-                        </h2>
-
-                        <p className="text-sm md:text-base font-bold text-gray-600">
-                          <span className="font-semibold text-black">
-                            {totalMatches.toLocaleString()}
-                          </span>{" "}
-                          properties found • currently viewing{" "}
-                          <span className="font-semibold text-black">
-                            {startRange}-{endRange}
-                          </span>
-                        </p>
-                      </>
-                    ) : (
-                      <div className="text-center py-10">
-                        <h2 className="text-2xl md:text-3xl font-bold text-gray-700">
-                          No results found{query ? ` for "${query}"` : ""}
-                        </h2>
-                        <p className="text-gray-500 mt-2">
-                          Try adjusting your search or filters to find what
-                          you're looking for.
-                        </p>
-                      </div>
-                    )}
+        {loading ? (
+          <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6">
+            <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-pulse"
+                >
+                  <div className="bg-gray-200 h-48 w-full" />
+                  <div className="p-4 space-y-3">
+                    <div className="h-6 bg-gray-200 rounded w-3/4" />
+                    <div className="h-4 bg-gray-200 rounded w-1/2" />
+                    <div className="h-4 bg-gray-200 rounded w-full" />
                   </div>
-                )}
-              </div>
-
-              <motion.div
-  initial={{ opacity: 0 }}
-  animate={{ opacity: 1 }}
-  transition={{ duration: 0.3, delay: 0.1 }}
-  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
->
-  {properties.map((property, index) => (
-    <motion.div
-      key={property.id}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
-      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group ${
-        property.propscore > 4
-          ? "border-[#FF6D33] bg-gradient-to-br from-white via-white to-orange-50/30 hover:border-[#FF6D33]"
-          : "border-gray-200 hover:border-[#FF6D33]"
-      }`}
-    >
-      <div className="relative h-52 overflow-hidden bg-gray-50">
-        <Image
-          src={property.image}
-          alt={property.alt || property.name}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-700"
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-        />
-
-        <div className="absolute top-4 left-4 bg-white rounded-lg px-3 py-1.5 shadow-md">
-          <span className="text-xs font-semibold text-black uppercase tracking-wide">
-            {property.type}
-          </span>
-        </div>
-
-        <div
-          className={`absolute top-4 right-4 rounded-lg px-2.5 py-1.5 shadow-md ${
-            property.propscore > 4
-              ? "bg-gradient-to-r from-[#FF6D33] to-orange-400"
-              : "bg-white"
-          }`}
-        >
-          <div className="flex items-center gap-1">
-            <FaStar
-              className={`text-sm ${
-                property.propscore > 4
-                  ? "text-white"
-                  : "text-[#FF6D33]"
-              }`}
-            />
-            <span
-              className={`text-sm font-semibold ${
-                property.propscore > 4
-                  ? "text-white"
-                  : "text-black"
-              }`}
-            >
-              {property.propscore.toFixed(1)}/5
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="p-5 space-y-4">
-        <div className="border-b border-gray-100 pb-4">
-          <h3 className="text-xl font-bold text-black mb-2 line-clamp-1 group-hover:text-[#FF6D33] transition-colors">
-            {property.name}
-          </h3>
-
-          <div className="flex items-start gap-2 mb-3">
-            <FaMapMarkerAlt className="text-[#FF6D33] text-base mt-0.5 flex-shrink-0" />
-            <span className="text-sm text-gray-700 leading-relaxed">
-              {property.micromarket}, {property.city}
-            </span>
-          </div>
-
-          <p className="text-xs text-gray-500">
-            Developer:{" "}
-            <span className="font-medium text-gray-700">
-              {property.developerName}
-            </span>
-          </p>
-        </div>
-
-        <div>
-          <p className="text-2xl font-bold text-black mb-1">
-            {formatPrice(property.minPrice)} -{" "}
-            {formatPrice(property.maxPrice)}
-          </p>
-          <p className="text-xs text-gray-500 uppercase tracking-wide">
-            Price Range
-          </p>
-        </div>
-
-        <div className="space-y-2.5">
-          <div className="flex items-center gap-2.5">
-            <MdApartment className="text-[#FF6D33] text-lg flex-shrink-0" />
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {property.typologies.map(
-                (type: string, idx: number) => (
-                  <span
-                    key={idx}
-                    className="text-xs font-medium text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200"
-                  >
-                    {type}
-                  </span>
-                )
-              )}
+                </div>
+              ))}
             </div>
           </div>
+        ) : (
+          <AnimatePresence mode="wait">
+            {showMap ? (
+              <motion.div
+                key="map-view"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="mb-6 h-[500px] w-full rounded-2xl overflow-hidden shadow-lg border border-gray-200"
+              >
+                <LazyMap allFilteredData={{ projects: properties }} />
+              </motion.div>
+            ) : (
+              <motion.div
+                key="list-view"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.4 }}
+                className="min-h-screen pb-24"
+              >
+                <div className="mb-6">
+                  {hasAnyFilter && (
+                    <div className="space-y-2">
+                      {totalMatches > 0 ? (
+                        <>
+                          <h2 className="text-2xl md:text-3xl font-bold text-black">
+                            {query ? (
+                              <>
+                                Showing results for{" "}
+                                <span className="text-[#FF6D33]">
+                                  "{query}"
+                                </span>
+                              </>
+                            ) : (
+                              <>Showing filtered results</>
+                            )}
+                          </h2>
 
-          <div className="flex items-center gap-2.5">
-            <FaRulerCombined className="text-[#FF6D33] text-lg flex-shrink-0" />
-            <span className="text-sm text-gray-700">
-              {formatArea(property.minSaleableArea)} -{" "}
-              {formatArea(property.maxSaleableArea)}
-            </span>
-          </div>
-        </div>
+                          <p className="text-sm md:text-base font-bold text-gray-600">
+                            <span className="font-semibold text-black">
+                              {totalMatches.toLocaleString()}
+                            </span>{" "}
+                            properties found • currently viewing{" "}
+                            <span className="font-semibold text-black">
+                              {startRange}-{endRange}
+                            </span>
+                          </p>
+                        </>
+                      ) : (
+                        <div className="text-center py-10">
+                          <h2 className="text-2xl md:text-3xl font-bold text-gray-700">
+                            No results found{query ? ` for "${query}"` : ""}
+                          </h2>
+                          <p className="text-gray-500 mt-2">
+                            Try adjusting your search or filters to find what
+                            you're looking for.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
-        <button className="w-full mt-4 bg-[#FF6D33] hover:bg-black text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm shadow-sm hover:shadow-md">
-          View Details
-        </button>
-      </div>
-    </motion.div>
-  ))}
-</motion.div>
-
-
-              {totalPages > 1 && (
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                  className="mt-6 fixed w-full bottom-0 left-1/2 -translate-x-1/2"
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
                 >
-                  <PaginationComponent pageCount={totalPages} />
+                  {properties.map((property, index) => (
+                    <motion.div
+                      key={property.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group ${
+                        property.propscore > 4
+                          ? "border-[#FF6D33] bg-gradient-to-br from-white via-white to-orange-50/30 hover:border-[#FF6D33]"
+                          : "border-gray-200 hover:border-[#FF6D33]"
+                      }`}
+                    >
+                      <div className="relative h-52 overflow-hidden bg-gray-50">
+                        <Image
+                          src={property.image}
+                          alt={property.alt || property.name}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-700"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        />
+
+                        <div className="absolute top-4 left-4 bg-white rounded-lg px-3 py-1.5 shadow-md">
+                          <span className="text-xs font-semibold text-black uppercase tracking-wide">
+                            {property.type}
+                          </span>
+                        </div>
+
+                        <div
+                          className={`absolute top-4 right-4 rounded-lg px-2.5 py-1.5 shadow-md ${
+                            property.propscore > 4
+                              ? "bg-gradient-to-r from-[#FF6D33] to-orange-400"
+                              : "bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center gap-1">
+                            <FaStar
+                              className={`text-sm ${
+                                property.propscore > 4
+                                  ? "text-white"
+                                  : "text-[#FF6D33]"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm font-semibold ${
+                                property.propscore > 4
+                                  ? "text-white"
+                                  : "text-black"
+                              }`}
+                            >
+                              {property.propscore.toFixed(1)}/5
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-5 space-y-4">
+                        <div className="border-b border-gray-100 pb-4">
+                          <h3 className="text-xl font-bold text-black mb-2 line-clamp-1 group-hover:text-[#FF6D33] transition-colors">
+                            {property.name}
+                          </h3>
+
+                          <div className="flex items-start gap-2 mb-3">
+                            <FaMapMarkerAlt className="text-[#FF6D33] text-base mt-0.5 flex-shrink-0" />
+                            <span className="text-sm text-gray-700 leading-relaxed">
+                              {property.micromarket}, {property.city}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-gray-500">
+                            Developer:{" "}
+                            <span className="font-medium text-gray-700">
+                              {property.developerName}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-2xl font-bold text-black mb-1">
+                            {formatPrice(property.minPrice)} -{" "}
+                            {formatPrice(property.maxPrice)}
+                          </p>
+                          <p className="text-xs text-gray-500 uppercase tracking-wide">
+                            Price Range
+                          </p>
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2.5">
+                            <MdApartment className="text-[#FF6D33] text-lg flex-shrink-0" />
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {property.typologies.map(
+                                (type: string, idx: number) => (
+                                  <span
+                                    key={idx}
+                                    className="text-xs font-medium text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200"
+                                  >
+                                    {type}
+                                  </span>
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2.5">
+                            <FaRulerCombined className="text-[#FF6D33] text-lg flex-shrink-0" />
+                            <span className="text-sm text-gray-700">
+                              {formatArea(property.minSaleableArea)} -{" "}
+                              {formatArea(property.maxSaleableArea)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <button className="w-full mt-4 bg-[#FF6D33] hover:bg-black text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm shadow-sm hover:shadow-md">
+                          View Details
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
                 </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
+
+                {totalPages > 1 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.2 }}
+                    className="mt-6 fixed w-full bottom-0 left-1/2 -translate-x-1/2"
+                  >
+                    <PaginationComponent pageCount={totalPages} />
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );
