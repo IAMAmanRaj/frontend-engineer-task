@@ -4,6 +4,7 @@ import PropertyView from "./_components/PropertyView";
 
 import { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { DEFAULTS } from "./constants";
 
 export async function generateMetadata(props: {
   searchParams: Promise<{
@@ -83,14 +84,6 @@ export default async function Page(props: {
     possession?: string;
   }>;
 }) {
-  const DEFAULTS = {
-    minBudget: "5000000",
-    maxBudget: "30000000",
-    sortType: "popularity",
-    sortOrder: "desc",
-    possession: "any",
-    page: "1",
-  };
   const params = await props.searchParams;
 
   const query =
