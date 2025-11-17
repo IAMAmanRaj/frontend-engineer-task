@@ -8,7 +8,6 @@ import {
   FaHome,
   FaStar,
   FaMap,
-  FaFilter,
   FaSortAmountDown,
 } from "react-icons/fa";
 import { MdApartment } from "react-icons/md";
@@ -740,7 +739,7 @@ export default function PropertyView({
               </AnimatePresence>
             </div>
 
-            <div className="mx-auto sm:absolute right-0">
+            <div className="vs:mx-auto sm:absolute right-0">
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -852,7 +851,7 @@ export default function PropertyView({
                           )}
                         </h2>
 
-                        <p className="text-sm md:text-base text-gray-600">
+                        <p className="text-sm md:text-base font-bold text-gray-600">
                           <span className="font-semibold text-black">
                             {totalMatches.toLocaleString()}
                           </span>{" "}
@@ -878,108 +877,131 @@ export default function PropertyView({
               </div>
 
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
-              >
-                {properties.map((property, index) => (
-                  <motion.div
-                    key={property.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                    className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-[#FF6D33] transition-all duration-300 cursor-pointer group"
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.3, delay: 0.1 }}
+  className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-6"
+>
+  {properties.map((property, index) => (
+    <motion.div
+      key={property.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: index * 0.05 }}
+      className={`bg-white rounded-xl shadow-sm border overflow-hidden hover:shadow-2xl transition-all duration-300 cursor-pointer group ${
+        property.propscore > 4
+          ? "border-[#FF6D33] bg-gradient-to-br from-white via-white to-orange-50/30 hover:border-[#FF6D33]"
+          : "border-gray-200 hover:border-[#FF6D33]"
+      }`}
+    >
+      <div className="relative h-52 overflow-hidden bg-gray-50">
+        <Image
+          src={property.image}
+          alt={property.alt || property.name}
+          fill
+          className="object-cover group-hover:scale-105 transition-transform duration-700"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
+
+        <div className="absolute top-4 left-4 bg-white rounded-lg px-3 py-1.5 shadow-md">
+          <span className="text-xs font-semibold text-black uppercase tracking-wide">
+            {property.type}
+          </span>
+        </div>
+
+        <div
+          className={`absolute top-4 right-4 rounded-lg px-2.5 py-1.5 shadow-md ${
+            property.propscore > 4
+              ? "bg-gradient-to-r from-[#FF6D33] to-orange-400"
+              : "bg-white"
+          }`}
+        >
+          <div className="flex items-center gap-1">
+            <FaStar
+              className={`text-sm ${
+                property.propscore > 4
+                  ? "text-white"
+                  : "text-[#FF6D33]"
+              }`}
+            />
+            <span
+              className={`text-sm font-semibold ${
+                property.propscore > 4
+                  ? "text-white"
+                  : "text-black"
+              }`}
+            >
+              {property.propscore.toFixed(1)}/5
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-5 space-y-4">
+        <div className="border-b border-gray-100 pb-4">
+          <h3 className="text-xl font-bold text-black mb-2 line-clamp-1 group-hover:text-[#FF6D33] transition-colors">
+            {property.name}
+          </h3>
+
+          <div className="flex items-start gap-2 mb-3">
+            <FaMapMarkerAlt className="text-[#FF6D33] text-base mt-0.5 flex-shrink-0" />
+            <span className="text-sm text-gray-700 leading-relaxed">
+              {property.micromarket}, {property.city}
+            </span>
+          </div>
+
+          <p className="text-xs text-gray-500">
+            Developer:{" "}
+            <span className="font-medium text-gray-700">
+              {property.developerName}
+            </span>
+          </p>
+        </div>
+
+        <div>
+          <p className="text-2xl font-bold text-black mb-1">
+            {formatPrice(property.minPrice)} -{" "}
+            {formatPrice(property.maxPrice)}
+          </p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">
+            Price Range
+          </p>
+        </div>
+
+        <div className="space-y-2.5">
+          <div className="flex items-center gap-2.5">
+            <MdApartment className="text-[#FF6D33] text-lg flex-shrink-0" />
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {property.typologies.map(
+                (type: string, idx: number) => (
+                  <span
+                    key={idx}
+                    className="text-xs font-medium text-gray-700 bg-gray-50 px-2.5 py-1 rounded-md border border-gray-200"
                   >
-                    <div className="relative h-48 md:h-56 overflow-hidden bg-gray-100">
-                      <Image
-                        src={property.image}
-                        alt={property.alt || property.name}
-                        fill
-                        className="object-cover group-hover:scale-110 transition-transform duration-500"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      />
+                    {type}
+                  </span>
+                )
+              )}
+            </div>
+          </div>
 
-                      <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-sm rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-lg">
-                        <FaStar className="text-[#FF6D33] text-xs" />
-                        <span className="text-sm font-bold text-black">
-                          {property.propscore.toFixed(1)}
-                        </span>
-                      </div>
+          <div className="flex items-center gap-2.5">
+            <FaRulerCombined className="text-[#FF6D33] text-lg flex-shrink-0" />
+            <span className="text-sm text-gray-700">
+              {formatArea(property.minSaleableArea)} -{" "}
+              {formatArea(property.maxSaleableArea)}
+            </span>
+          </div>
+        </div>
 
-                      <div className="absolute top-3 left-3 bg-black/80 backdrop-blur-sm rounded-full px-3 py-1.5">
-                        <span className="text-xs font-medium text-white">
-                          {property.type}
-                        </span>
-                      </div>
-                    </div>
+        <button className="w-full mt-4 bg-[#FF6D33] hover:bg-black text-white font-semibold py-3 rounded-lg transition-all duration-300 text-sm shadow-sm hover:shadow-md">
+          View Details
+        </button>
+      </div>
+    </motion.div>
+  ))}
+</motion.div>
 
-                    <div className="p-4 md:p-5 space-y-3">
-                      <div>
-                        <h3 className="text-lg md:text-xl font-bold text-black group-hover:text-[#FF6D33] transition-colors line-clamp-1">
-                          {property.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          by{" "}
-                          <span className="font-medium text-black">
-                            {property.developerName}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div className="flex items-start gap-2">
-                        <FaMapMarkerAlt className="text-[#FF6D33] text-sm mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700">
-                          {property.micromarket}, {property.city}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <MdApartment className="text-gray-600 text-base flex-shrink-0" />
-                        {property.typologies.map(
-                          (type: string, idx: number) => (
-                            <span
-                              key={idx}
-                              className="text-xs font-medium bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full"
-                            >
-                              {type}
-                            </span>
-                          )
-                        )}
-                      </div>
-
-                      <div className="pt-2 border-t border-gray-100">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500 font-medium">
-                            Price Range
-                          </span>
-                          <div className="text-right">
-                            <p className="text-sm md:text-base font-bold text-black">
-                              {formatPrice(property.minPrice)} -{" "}
-                              {formatPrice(property.maxPrice)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <FaRulerCombined className="text-gray-600 text-sm flex-shrink-0" />
-                        <div className="flex-1">
-                          <span className="text-xs text-gray-500">Area: </span>
-                          <span className="text-sm font-semibold text-black">
-                            {formatArea(property.minSaleableArea)} -{" "}
-                            {formatArea(property.maxSaleableArea)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <button className="w-full mt-3 bg-[#FF6D33] hover:bg-black text-white font-medium py-2.5 rounded-full transition-all duration-300 text-sm md:text-base">
-                        View Details
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
 
               {totalPages > 1 && (
                 <motion.div

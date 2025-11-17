@@ -64,10 +64,10 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
             currentPage > 1 && router.push(createPageURL(currentPage - 1))
           }
           disabled={currentPage <= 1}
-          className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] disabled:hover:border-gray-200 disabled:hover:text-black"
+          className="flex items-center gap-2 px-2 xs:px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] disabled:hover:border-gray-200 disabled:hover:text-black"
         >
           <svg
-            className="w-4 h-4"
+            className="w-3 h-3 xs:w-4 xs:h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -90,7 +90,7 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
               ) : (
                 <button
                   onClick={() => router.push(createPageURL(page as number))}
-                  className={`min-w-[25px] sm:min-w-[40px] h-[25px] sm:h-10 px-3 rounded-full font-medium transition-all duration-200 ${
+                  className={`min-w-[25px] sm:min-w-[40px]  sm:h-10 px-2 xs:px-3 rounded-full font-medium transition-all duration-200 ${
                     page === currentPage
                       ? "bg-[#FF6D33] text-white shadow-lg scale-110"
                       : "bg-white border-2 border-gray-200 text-black hover:border-[#FF6D33] hover:text-[#FF6D33] hover:scale-105"
@@ -114,11 +114,11 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
             router.push(createPageURL(currentPage + 1))
           }
           disabled={currentPage >= pageCount}
-          className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#FF6D33] text-white hover:bg-black disabled:hover:bg-[#FF6D33]"
+          className="flex items-center gap-2 px-2 xs:px-4 py-2 rounded-full font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed bg-[#FF6D33] text-white hover:bg-black disabled:hover:bg-[#FF6D33]"
         >
           <span className="hidden sm:inline">Next</span>
           <svg
-            className="w-4 h-4"
+            className="w-3 h-3 xs:w-4 xs:h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
