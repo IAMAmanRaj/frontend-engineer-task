@@ -7,7 +7,6 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const query = (searchParams.get("query") || "").toLowerCase();
 
-  console.log("Received search params:", Array.from(searchParams.entries()));
 
   const minBudget = Number(searchParams.get("minBudget") || 0);
   const maxBudget = Number(searchParams.get("maxBudget") || Infinity);
@@ -39,19 +38,14 @@ export async function GET(req: Request) {
       }
     }
   } else {
-    console.log("No query provided, returning all projects.");
+
     matches = projects;
   }
 
-  console.log(matches.length, "matches found before filtering.");
-  console.log("budget filter:", minBudget, "-", maxBudget);
-
-  // Budget filter
   matches = matches.filter(
     (p) => p.minPrice >= minBudget && p.maxPrice <= maxBudget
   );
 
-  console.log(matches.length, "matches found after budget filtering.");
 
   if (apartmentsParam || villasParam || plotAreaParam) {
     matches = matches.filter((p) => {
@@ -111,10 +105,8 @@ export async function GET(req: Request) {
       return false;
     });
 
-    console.log(matches.length, "matches found after property type filtering.");
   }
 
-  // Sorting
   matches.sort((a, b) => {
     let valueA, valueB;
 
@@ -137,11 +129,8 @@ export async function GET(req: Request) {
     return sortOrder === "asc" ? valueA - valueB : valueB - valueA;
   });
 
-  console.log(matches.length, "matches found after sorting.");
-
   const totalMatches = matches.length;
 
-  console.log(totalMatches, "total matches found for query:", query);
   const totalPages = Math.ceil(totalMatches / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;

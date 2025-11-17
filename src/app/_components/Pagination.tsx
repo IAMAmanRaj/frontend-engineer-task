@@ -11,8 +11,6 @@ export function PaginationComponent({ pageCount }: PaginationProps) {
   const router = useRouter();
   const currentPage = Number(searchParams.get("page")) || 1;
 
-  console.log("page count:", pageCount);
-
   const createPageURL = (pageNumber: number) => {
     const params = new URLSearchParams(searchParams);
     params.set("page", pageNumber.toString());

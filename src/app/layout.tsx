@@ -28,13 +28,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <nav className="w-full flex justify-center pl-4 items-center z-20 top-0 h-20 bg-white">
-          <div className="flex text-3xl font-bold flex-row items-center">
-            <LogoIcon width={42} height={42} />
-            <span className="text-[#FF6D33] ml-1">Prop</span>
-            <span className="text-black ml-px">soch</span>
+        <nav className="w-full flex justify-center items-center px-6 z-20 top-0 h-20 bg-white shadow-sm border-b border-gray-200 sticky">
+          <div className="flex flex-col md:flex-row items-center gap-1 md:gap-4">
+            <div className="flex items-center">
+              <LogoIcon width={42} height={42} />
+              <h1 className="flex items-baseline ml-2 font-extrabold text-3xl select-none">
+                <span className="text-[#FF6D33]">Prop</span>
+                <span className="text-black ml-px">soch</span>
+              </h1>
+            </div>
+            <p className="hidden md:block text-sm text-gray-600 font-medium select-none mt-0.5">
+              A guided home buying program
+            </p>
           </div>
         </nav>
+
         {children}
       </body>
     </html>
