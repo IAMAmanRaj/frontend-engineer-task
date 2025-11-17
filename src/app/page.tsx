@@ -33,8 +33,8 @@ export default async function Page(props: {
   const params = await props.searchParams;
 
   const DEFAULTS = {
-    minBudget: "15000000",
-    maxBudget: "50000000",
+    minBudget: "5000000",
+    maxBudget: "30000000",
     sortType: "popularity",
     sortOrder: "desc",
     possession: "any",
@@ -51,15 +51,14 @@ export default async function Page(props: {
     params?.micromarket ||
     "";
 
-
   const currentPageValue = Number(params?.page || 1);
 
- const filters = {
-  minBudget: Number(getParam("minBudget")) ?? 500000,
-  maxBudget: Number(getParam("maxBudget")) ?? Infinity,
-};
+  const filters = {
+    minBudget: Number(getParam("minBudget")),
+    maxBudget: Number(getParam("maxBudget")),
+  };
 
-const totalPages = await getTotalPages(query, filters);
+  const totalPages = await getTotalPages(query, filters);
 
   return (
     <div className="w-screen h-screen flex flex-col bg-white pt-5">
