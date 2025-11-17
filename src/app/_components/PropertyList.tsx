@@ -10,6 +10,8 @@ import {
 } from "react-icons/fa";
 import { MdApartment } from "react-icons/md";
 
+import { useRouter, useSearchParams } from "next/navigation";
+
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PropertyList({
@@ -24,16 +26,38 @@ export default function PropertyList({
   const [totalMatches, setTotalMatches] = useState(0);
   const [currentPageNum, setCurrentPageNum] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
+  const [openSort, setOpenSort] = useState(false);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const DEFAULTS = {
+    minBudget: "15000000",
+    maxBudget: "50000000",
+    sortType: "popularity",
+    sortOrder: "desc",
+    possession: "any",
+  };
+
+  const getParam = (key: keyof typeof DEFAULTS) => {
+    return searchParams.get(key) ?? DEFAULTS[key];
+  };
 
   useEffect(() => {
     async function load() {
       setLoading(true);
       try {
-        const res = await fetch(
-          `${apiUrl}/api/properties?query=${encodeURIComponent(
-            query
-          )}&page=${currentPage}`
-        );
+        const safeMin = getParam("minBudget");
+        const safeMax = getParam("maxBudget");
+        const safeSortType = getParam("sortType");
+        const safeSortOrder = getParam("sortOrder");
+        const safePossession = getParam("possession");
+
+        const url = `${apiUrl}/api/properties?query=${encodeURIComponent(
+          query
+        )}&page=${currentPage}&minBudget=${safeMin}&maxBudget=${safeMax}&sortType=${safeSortType}&sortOrder=${safeSortOrder}&possession=${safePossession}`;
+
+        const res = await fetch(url);
         const data = await res.json();
 
         console.log(data.query, "Query");
@@ -45,15 +69,44 @@ export default function PropertyList({
         setTotalMatches(data.totalMatches || 0);
         setCurrentPageNum(data.currentPage || 1);
         setTotalPages(data.totalPages || 0);
-      } catch (error) {
-        console.error("Error loading properties:", error);
+      } catch (err) {
+        console.error("Error loading properties:", err);
       } finally {
         setLoading(false);
       }
     }
 
     load();
-  }, [query, currentPage]);
+  }, [query, currentPage, searchParams]);
+
+  const updateParamsBatch = (entries: Record<string, string>) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    Object.entries(entries).forEach(([k, v]) => {
+      if (v === "") params.delete(k);
+      else params.set(k, v);
+    });
+
+    params.delete("page");
+
+    router.push(`?${params.toString()}`);
+  };
+
+  const handleBudgetChange = (min: number, max: number) => {
+    updateParamsBatch({
+      minBudget: min.toString(),
+      maxBudget: max.toString(),
+    });
+  };
+
+  const handleSortSelect = (type: string, order: string) => {
+    setOpenSort(false);
+
+    updateParamsBatch({
+      sortType: type,
+      sortOrder: order,
+    });
+  };
 
   const formatPrice = (price: number) => {
     if (price >= 10000000) {
@@ -101,6 +154,77 @@ export default function PropertyList({
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-6 lg:px-8 py-6 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
       <div className="max-w-7xl mx-auto">
+        <div className="flex gap-3 mb-6 flex-wrap">
+          <div className="relative inline-block text-left">
+            <button
+              onClick={() => setOpenSort(!openSort)}
+              className="px-4 py-2 rounded-full border text-sm bg-white border-gray-300 hover:bg-[#FF6D33] hover:text-white transition"
+            >
+              Sort
+            </button>
+
+            {openSort && (
+              <div className="absolute mt-2 w-52 rounded-xl shadow-lg bg-white border border-gray-200 z-20">
+                <ul className="py-2 text-sm text-gray-700">
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("price", "desc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Price: High → Low
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("price", "asc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Price: Low → High
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("possession", "desc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Possession: New → Old
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("possession", "asc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Possession: Old → New
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("popularity", "desc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Propscore: High → Low
+                    </button>
+                  </li>
+
+                  <li>
+                    <button
+                      onClick={() => handleSortSelect("popularity", "asc")}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-100"
+                    >
+                      Propscore: Low → High
+                    </button>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="mb-6">
           {query && (
             <div className="space-y-2">

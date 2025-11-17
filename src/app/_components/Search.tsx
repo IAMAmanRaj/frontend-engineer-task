@@ -20,6 +20,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
   const handleSearch = useDebouncedCallback(async (term: string) => {
     if (!term.trim()) {
       setSuggestions([]);
+
       setSelectedIndex(-1);
       return;
     }
@@ -50,7 +51,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
       else params.delete(field);
     });
     params.delete("page");
-    params.delete("query");
+    params.delete("search");
 
     replace(`${pathname}?${params.toString()}`);
 
@@ -60,11 +61,19 @@ export default function Search({ placeholder }: { placeholder: string }) {
   }
 
   function applyManualSearch() {
-    if (!inputValue.trim()) return;
+    if (!inputValue.trim()) {
+      const params = new URLSearchParams(searchParams);
+      params.delete("page");
+      params.delete("name");
+      params.delete("developerName");
+      params.delete("micromarket");
+      params.delete("search");
+      return;
+    }
 
     const params = new URLSearchParams(searchParams);
 
-    params.set("query", inputValue.trim());
+    params.set("search", inputValue.trim());
     params.delete("page");
     params.delete("name");
     params.delete("developerName");
@@ -139,7 +148,12 @@ export default function Search({ placeholder }: { placeholder: string }) {
   };
 
   return (
-    <div className="relative w-full px-4 pb-8 md:px-6 lg:px-8">
+    <div
+      onMouseLeave={() => {
+        setSuggestions([]);
+      }}
+      className="relative w-full px-4 pb-8 md:px-6 lg:px-8"
+    >
       <div className="relative flex items-center max-w-3xl mx-auto">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
           <FaMagnifyingGlass className="h-5 w-5 text-gray-400" />
@@ -147,7 +161,7 @@ export default function Search({ placeholder }: { placeholder: string }) {
 
         <input
           ref={inputRef}
-          className="w-full rounded-full border-2 border-gray-200 bg-white py-3 pl-12 pr-4 text-sm md:text-base text-black placeholder-gray-400 outline-none transition-all duration-200 focus:border-[#FF6D33] focus:ring-2 focus:ring-[#FF6D33] focus:ring-opacity-20"
+          className={`w-full rounded-full border-2 border-gray-200 bg-white py-3 pl-12 pr-4 text-sm md:text-base text-black placeholder-gray-400 outline-none transition-all duration-200 focus:border-[#FF6D33] focus:ring-2 focus:ring-[#FF6D33] focus:ring-opacity-20`}
           placeholder={placeholder}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
@@ -169,6 +183,9 @@ export default function Search({ placeholder }: { placeholder: string }) {
                 }`}
                 onClick={() => applySuggestion(s)}
                 onMouseEnter={() => setSelectedIndex(i)}
+                onMouseLeave={() => {
+                  setSelectedIndex(-1);
+                }}
               >
                 <span
                   className={`text-sm md:text-base transition-colors ${

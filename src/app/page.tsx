@@ -18,28 +18,55 @@ import { getTotalPages } from "./db/actions";
 
 export default async function Page(props: {
   searchParams?: Promise<{
-    query?: string;
+    search?: string;
     name?: string;
     developerName?: string;
     micromarket?: string;
     page?: string;
+    minBudget?: string;
+    maxBudget?: string;
+    sortType?: string;
+    sortOrder?: string;
+    possession?: string;
   }>;
 }) {
-  const searchParams = await props.searchParams;
+  const params = await props.searchParams;
+
+  const DEFAULTS = {
+    minBudget: "15000000",
+    maxBudget: "50000000",
+    sortType: "popularity",
+    sortOrder: "desc",
+    possession: "any",
+    page: "1",
+  };
+
+  const getParam = (key: keyof typeof DEFAULTS) =>
+    params?.[key] ?? DEFAULTS[key];
+
   const query =
-    searchParams?.query ||
-    searchParams?.name ||
-    searchParams?.developerName ||
-    searchParams?.micromarket ||
+    params?.search ||
+    params?.name ||
+    params?.developerName ||
+    params?.micromarket ||
     "";
-  const currentPageValue = Number(searchParams?.page) || 1;
-  const totalPages = await getTotalPages(query);
+
+
+  const currentPageValue = Number(params?.page || 1);
+
+ const filters = {
+  minBudget: Number(getParam("minBudget")),
+  maxBudget: Number(getParam("maxBudget")),
+};
+
+const totalPages = await getTotalPages(query, filters);
 
   return (
     <div className="w-screen h-screen flex flex-col bg-white pt-5">
       <div className="flex flex-row">
         <Search placeholder="Search for Developers, Locations, or Projects" />
       </div>
+
       <PropertyList query={query} currentPage={currentPageValue} />
 
       <PaginationComponent pageCount={totalPages} />
